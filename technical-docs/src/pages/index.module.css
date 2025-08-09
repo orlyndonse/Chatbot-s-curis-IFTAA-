@@ -1,0 +1,118 @@
+/* technical-docs/src/pages/index.module.css */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--ifm-hero-background-color); /* Utilise les variables Docusaurus */
+  color: var(--ifm-hero-text-color);
+}
+
+.heroLogoContainer {
+  margin-bottom: 2rem;
+}
+
+.heroLogo {
+  height: 70px; /* Légèrement plus petit pour une doc technique peut-être */
+  width: auto;
+  max-width: 280px;
+}
+
+/* Titre avec un style sobre et professionnel */
+.heroTitleGradient {
+  font-size: 2.8rem; /* Ajusté pour la doc technique */
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  color: var(--ifm-color-primary-darker); /* Utilisation d'une couleur primaire plus foncée pour le thème clair */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme='dark'] .heroTitleGradient {
+  color: var(--ifm-color-primary-light); /* Couleur primaire claire pour le thème sombre */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.heroSubtitle {
+  font-size: 1.15rem; /* Ajusté */
+  font-weight: 400;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2.5rem;
+  color: var(--ifm-font-color-secondary); /* Couleur de texte secondaire Docusaurus */
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.heroButtonPrimary {
+  background-color: var(--ifm-color-primary) !important;
+  border-color: var(--ifm-color-primary) !important;
+  color: var(--ifm-button-color) !important; /* Docusaurus gère la couleur du texte du bouton */
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.heroButtonPrimary:hover {
+  background-color: var(--ifm-color-primary-dark) !important;
+  border-color: var(--ifm-color-primary-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Section de contenu principal sur la page d'accueil */
+.mainContentSection {
+  padding: 4rem 0;
+}
+
+.promoSection {
+  text-align: center;
+  padding: 2.5rem;
+  border-radius: 12px; /* Moins arrondi que la doc utilisateur, plus "carré" */
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background-color: var(--ifm-background-surface-color); /* Fond légèrement différent du fond principal */
+}
+
+html[data-theme='light'] .promoSection {
+   color: var(--custom-light-on-background);
+}
+
+html[data-theme='dark'] .promoSection {
+   color: var(--custom-dark-on-background);
+}
+
+.promoSection h2 {
+  font-size: 1.6rem; /* Ajusté */
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}
+
+.promoSection p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  opacity: 0.9;
+}
+
+.quickLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.quickLinkButton {
+  padding: 0.5rem 1rem; /* Ajusté */
+  /* Les boutons outline utiliseront les couleurs primaires définies dans custom.css */
+}

@@ -1,0 +1,76 @@
+/* user-docs/src/css/custom.css */
+
+/**
+ * Any CSS customisations belonging to the Docusaurus site can be
+ * placed in this file. Docusaurus will automatically load whatever
+ * styles are defined here.
+ */
+
+/* Global font attempt - ensure DM Sans is loaded via docusaurus.config.js */
+body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Docusaurus theme variable overrides to match your application's color scheme */
+:root {
+  --ifm-color-primary: #FB8C00;         /* Your App's Light Theme Primary */
+  --ifm-color-primary-dark: #E87F00;    /* A darker shade of your light primary for hover/active */
+  --ifm-color-primary-darker: #D97706;  /* Even darker (e.g., amber-600) */
+  --ifm-color-primary-darkest: #B45D00; /* Darkest shade */
+  --ifm-color-primary-light: #FFB86B;   /* A lighter shade */
+  --ifm-color-primary-lighter: #FFC78E; /* Even lighter */
+  --ifm-color-primary-lightest: #FFD6B1;/* Lightest */
+
+  /* Adjusting link colors to use the primary color */
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-dark);
+  /* You can also adjust --ifm-link-hover-decoration if needed */
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1); /* Default, adjust if needed */
+
+  /* Custom background colors based on your Tailwind config for better harmony, if needed beyond hero */
+  --custom-light-background: #FFF8F5;             /* light.background */
+  --custom-light-surface-container-low: #FFF2EB;  /* light.surfaceContainerLow */
+  --custom-light-on-background: #201A17;          /* light.onBackground */
+}
+
+html[data-theme='dark'] {
+  --ifm-color-primary: #FFB86B;         /* Your App's Dark Theme Primary */
+  --ifm-color-primary-dark: #FFA752;    /* A brighter/lighter shade for "dark" variant in dark mode */
+  --ifm-color-primary-darker: #FF963A;  /* Even brighter */
+  --ifm-color-primary-darkest: #FF8521; /* Brightest */
+  --ifm-color-primary-light: #E87F00;   /* A darker shade for "light" variant in dark mode */
+  --ifm-color-primary-lighter: #D97706; /* Even darker */
+  --ifm-color-primary-lightest: #B45D00;/* Darkest */
+
+  /* Adjusting link colors for dark mode */
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-dark);
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3); /* Default, adjust if needed */
+
+  /* Custom background colors for dark mode */
+  --custom-dark-background: #171210;               /* dark.background */
+  --custom-dark-surface-container-low: #201A17;    /* dark.surfaceContainerLow */
+  --custom-dark-on-background: #EDE0DA;            /* dark.onBackground */
+}
+
+/* Example of a more global button override if you want ALL Docusaurus buttons to look like your primary */
+/* This is optional, as Docusaurus buttons will already pick up --ifm-color-primary */
+/*
+.button.button--primary {
+  background-color: var(--ifm-color-primary) !important;
+  border-color: var(--ifm-color-primary) !important;
+  color: #FFFFFF !important; // Assuming white text on light primary
+}
+
+html[data-theme='dark'] .button.button--primary {
+  color: #492900 !important; // Assuming dark text on dark primary
+}
+
+.button.button--primary:hover {
+  background-color: var(--ifm-color-primary-dark) !important;
+  border-color: var(--ifm-color-primary-dark) !important;
+}
+*/

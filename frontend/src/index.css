@@ -1,0 +1,818 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * BASE
+ */
+@layer base {
+  a,
+  img,
+  button {
+    @apply block;
+  }
+
+  input {
+    @apply block
+    outline-none
+    bg-transparent
+    w-full;
+  }
+
+  input[type='password'] {
+    @apply tracking-[5px];
+  }
+
+  input[type='password']::placeholder {
+    @apply tracking-normal;
+  }
+
+  body {
+    @apply bg-light-background 
+    dark:bg-dark-background 
+    text-light-onBackground
+    dark:text-dark-onBackground;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2
+    h-2
+    rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-transparent
+    rounded-full;
+  }
+
+  *:hover::-webkit-scrollbar-thumb {
+    @apply bg-light-onBackground/15
+    dark:bg-dark-onBackground/15;
+  }
+}
+
+/**
+*components
+*/
+
+@layer components {
+  /**
+  * Text field
+  */
+  .text-field-wrapper {
+     @apply relative;
+  }
+  
+  .text-field {
+    @apply ring-1
+    ring-inset
+    ring-light-outline
+    dark:ring-dark-outline
+    bg-inherit
+    text-light-onSurface
+    dark:text-dark-onSurface
+    caret-light-primary
+    dark:caret-dark-primary
+    h-14
+    px-4
+    pt-6
+    pb-2
+    rounded-extraSmall
+    transition-shadow
+    duration-short3
+    ease-linear
+    hover:ring-light-onSurface 
+    hover:dark:ring-dark-onSurface
+    focus:ring-2
+    focus:ring-light-primary
+    focus:dark:ring-dark-primary;
+  }
+  
+  .text-field::placeholder {
+    @apply opacity-0;
+  }
+
+  .text-field:focus::placeholder {
+    @apply opacity-100;
+  }
+  
+  .label-text {
+    @apply absolute
+    text-labelLarge
+    top-[18px]
+    left-4
+    text-light-onSurfaceVariant
+    dark:text-dark-onSurfaceVariant 
+    pointer-events-none
+    select-none
+    transition-all
+    duration-short4
+    ease-standard;
+  }
+    
+  .text-field-wrapper:hover .label-text {
+    @apply text-light-onSurface
+    dark:text-dark-onSurface;
+  }
+
+  /* Ce sélecteur cible à la fois le focus et quand l'input n'est pas vide */
+  .text-field-wrapper:focus-within .label-text,
+  .text-field-wrapper:has(.text-field:not(:placeholder-shown)) .label-text {
+    @apply text-xs
+    top-2
+    translate-y-0
+    text-light-primary
+    dark:text-dark-primary;
+  }
+  
+  .text-field-wrapper .helper-text { 
+    @apply text-light-onSurfaceVariant
+    dark:text-dark-onSurfaceVariant
+    text-bodySmall
+    px-4 
+    pt-1;
+  }
+
+
+  
+  /**
+  * Button
+  */
+  .btn { 
+    @apply h-10
+    flex
+    justify-center
+    items-center
+    rounded-full 
+    text-labelLarge
+    px-4
+    transition-shadow
+    duration-short3
+    ease-standard
+    hover:shadow-elevation1
+    focus:shadow-none;
+  }
+  .btn.filled.primary {    
+  --state-layer-bg: theme('colors.light.onPrimary');
+    @apply bg-light-primary
+    dark:bg-dark-primary
+    text-light-onPrimary
+    dark:text-dark-onPrimary;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .btn.filled.primary { 
+      --state-layer-bg: theme('colors.dark.onPrimary');
+    }
+  }
+
+  .btn.filled:disabled {    
+    @apply bg-light-onSurface/[0.12]
+    dark:bg-dark-onSurface/[0.12] 
+    text-light-onSurface/[0.38]
+    dark:text-dark-onSurface/[0.38]
+    pointer-events-none;
+  }
+
+  /* Adding outlined button variant as used in DocumentPreview */
+  .btn.outlined {
+    @apply border
+    border-light-outline
+    dark:border-dark-outline
+    text-light-primary
+    dark:text-dark-primary;
+     --state-layer-bg: theme('colors.light.primary');
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .btn.outlined {
+      --state-layer-bg: theme('colors.dark.primary');
+    }
+  }
+
+  .btn.outlined:disabled {
+     @apply border-light-onSurface/[0.12]
+    dark:border-dark-onSurface/[0.12]
+    text-light-onSurface/[0.38]
+    dark:text-dark-onSurface/[0.38]
+    pointer-events-none;
+  }
+
+  /* Adding text button variant as used in DocumentUploadArea */
+  .btn.text {
+    @apply px-3 /* Text buttons often have slightly less padding */
+    hover:bg-light-primary/5 /* Example hover for text button */
+    dark:hover:bg-dark-primary/5;
+    --state-layer-bg: theme('colors.light.primary');
+  }
+   @media (prefers-color-scheme: dark) {
+    .btn.text {
+      --state-layer-bg: theme('colors.dark.primary');
+    }
+  }
+   .btn.text:disabled {
+    @apply text-light-onSurface/[0.38]
+    dark:text-dark-onSurface/[0.38]
+    hover:bg-transparent
+    dark:hover:bg-transparent
+    pointer-events-none;
+  }
+
+  
+  /**
+  * State layer
+  */
+  :has(>.state-layer) {
+    @apply relative
+    overflow-hidden
+    isolate;
+    }
+
+  .state-layer {
+    @apply absolute 
+    inset-0
+    bg-[--state-layer-bg]
+    opacity-0
+    transition-opacity 
+    duration-short3 
+    ease-standard
+    pointer-events-none
+    select-none
+    -z-10;
+  }
+
+  :has(> .state-layer):hover > .state-layer { 
+    @apply opacity-[0.08];
+  }
+  :has(> .state-layer):where(:focus, :focus-visible,
+  :focus-within)
+  > .state-layer {
+  @apply opacity-[0.1];
+  }
+
+  
+  /**
+  * Link */
+  .link {
+    @apply transition-colors
+    duration-short3
+    ease-standard
+
+    hover:text-light-primary
+    hover:dark:text-dark-primary
+    hover:underline;
+    }
+
+
+    
+
+  .linear-progress {
+    @apply h-1
+    bg-light-secondaryContainer
+    dark:bg-dark-secondaryContainer
+    rounded-full
+    mx-1
+    overflow-hidden
+    origin-top;
+  }
+
+  .linear-progress .active-indicator {
+    @apply h-[inherit]
+    bg-light-primary
+    dark:bg-dark-primary
+    rounded-full
+    origin-right
+    -translate-x-full; /* Corrected class for animation if needed, ensure animation is defined */
+  }
+
+  .circular-progress{
+    @apply border-4
+    border-current /* Uses current text color for the main part of the spinner */
+    /* dark:border-current - already covered by border-current if text color is set */
+    border-r-transparent /* Makes one side transparent for the spinning effect */
+    w-12
+    h-12
+    rounded-full
+    animate-spin;
+    }
+
+    .circular-progress.large { /* Specific class for large, if default is not w-12 h-12 */
+        @apply w-12 h-12 border-4;
+    }
+    .circular-progress.small {
+      @apply border-[3px] /* Thinner border for smaller spinner */
+      w-5
+      h-5;
+    }
+
+    .snackbar {
+      @apply fixed
+      bottom-4
+      left-4
+      right-4
+      shadow-elevation3
+      rounded-extraSmall
+      min-h-12
+      max-w-[60ch]
+      min-w-[36ch]
+      px-4
+      py-[14px]
+      origin-bottom
+      z-50 /* Ensure snackbar is above most things, including context hub panel (z-40) */
+      sm:left-6
+      sm:right-auto
+      sm:bottom-6
+      sm:w-max
+      bg-light-inverseSurface 
+      text-light-inverseOnSurface 
+      dark:bg-dark-inverseSurface 
+      dark:text-dark-inverseOnSurface; 
+    }
+  
+    .snackbar.error {
+      @apply bg-light-errorContainer 
+      text-light-onErrorContainer 
+      dark:bg-dark-errorContainer 
+      dark:text-dark-onErrorContainer; 
+    }
+  
+    .snackbar.success {
+      @apply bg-light-tertiaryContainer 
+      text-light-onTertiaryContainer 
+      dark:bg-dark-tertiaryContainer 
+      dark:text-dark-onTertiaryContainer; 
+    }
+  
+    
+    .snackbar.info {
+      @apply bg-light-primaryContainer
+      text-light-onPrimaryContainer
+      dark:bg-dark-primaryContainer
+      dark:text-dark-onPrimaryContainer;
+    }
+    
+
+    
+.icon-btn {
+  --state-layer-bg: theme('colors.light.onSurfaceVariant');
+  @apply text-light-onSurfaceVariant 
+  dark:text-dark-onSurfaceVariant
+  grid   
+  place-items-center
+  rounded-full
+  h-10
+  w-10;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .icon-btn { 
+      --state-layer-bg: theme('colors.dark.onSurfaceVariant');
+    }
+  }
+
+  
+  .icon-btn:disabled {
+    @apply text-light-onSurfaceVariant/[0.38] 
+    dark:text-dark-onSurfaceVariant/[0.38] 
+    cursor-not-allowed;
+      }
+
+  
+  .icon-btn.small {
+    @apply w-7
+    h-7 
+    min-w-7
+    min-h-7;
+  }
+  .icon-btn.large { /* Corrected: remove space before large */ 
+    @apply w-12
+    h-12
+    min-w-12
+    min-h-12;
+  }
+
+ 
+  .menu-wrapper {
+    @apply relative; 
+  }
+
+  .menu {
+    @apply bg-light-surfaceContainer 
+    dark:bg-dark-surfaceContainer
+    absolute 
+    top-[calc(100%+4px)] 
+    right-0 
+    min-w-[112px] 
+    max-w-[280px] 
+    py-2 
+    rounded-extraSmall 
+    shadow-elevation2 
+    z-20 
+    origin-top-right 
+    scale-75 
+    opacity-0 
+    invisible 
+    transition-[transform,opacity,visibility] 
+    duration-short4 
+    ease-standard; 
+
+    /* RTL adjustment */
+    [dir="rtl"] & {
+      @apply right-auto left-0 origin-top-left;
+    }
+  }
+
+  .menu.active {
+    @apply scale-100 
+    opacity-100 
+    visible; 
+
+    /* RTL adjustment */
+    [dir="rtl"] & {
+      @apply origin-top-left;
+    }
+  }
+
+  .menu-item {
+    --state-layer-bg: theme('colors.light.onSurface');
+    @apply text-light-onSurface 
+    dark:text-dark-onSurface
+    text-labelLarge 
+    h-10 
+    w-full 
+    flex 
+    items-center
+    px-3 
+    cursor-pointer;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .menu-item {
+      --state-layer-bg: theme('colors.dark.onSurface');
+    }
+  }
+
+  .menu-item.destructive {
+      @apply text-light-error dark:text-dark-error;
+       --state-layer-bg: theme('colors.light.error');
+  }
+   @media (prefers-color-scheme: dark) {
+    .menu-item.destructive {
+      --state-layer-bg: theme('colors.dark.error');
+    }
+  }
+
+  /**
+  * Sidebar
+  */
+  
+  .sidebar {
+    @apply bg-light-surfaceContainerLow
+    dark:bg-dark-surfaceContainerLow
+    text-light-onSurface
+    dark:text-dark-onSurface
+    fixed
+    top-0
+    left-0
+    h-dvh
+    w-0 
+    max-w-[80vw]
+    rounded-e-large
+    shadow-elevation1
+    overflow-hidden 
+    transition-[width]
+    duration-short4
+    ease-emphasized
+    z-40
+    sm:max-w-[320px]
+    lg:static
+    lg:opacity-100 
+    lg:visible 
+    lg:w-full
+    lg:shadow-none
+    lg:rounded-none;
+
+    /* RTL adjustment for smaller screens */
+    [dir="rtl"] & {
+      @apply left-auto right-0 rounded-e-none rounded-s-large;
+    }
+  }
+
+  
+  .sidebar.active { 
+    @apply w-[80vw] 
+    duration-medium2 
+    ease-standardDecelerate
+    sm:w-[360px];
+    }
+  .sidebar-inner { 
+    @apply h-full
+      grid
+      grid-rows-[max-content,max-content,1fr,max-content]
+      grid-cols-1
+      px-3
+      opacity-0
+      transition-opacity 
+      duration-medium2
+      lg:opacity-100;
+  }
+  
+  .sidebar.active .sidebar-inner { 
+    @apply opacity-100 
+    delay-short2;
+  }
+  /**
+  * Overlay
+  */ 
+  .overlay {
+    @apply fixed 
+    top-0 
+    left-0 
+    w-full
+    h-dvh 
+    z-30
+    bg-transparent
+    invisible
+    transition-colors
+    lg:hidden;
+  }
+
+  
+  .overlay.active {
+    @apply bg-black/40 
+    visible;
+  }
+  
+  /**
+  * Extended FAB
+  */
+  
+  .extended-fab {
+  --state-layer-bg: theme('colors.light.onPrimaryContainer');
+    @apply bg-light-primaryContainer 
+    dark:bg-dark-primaryContainer 
+    text-light-onPrimaryContainer 
+    dark:text-dark-onPrimaryContainer
+    text-labelLarge
+    max-w-max
+    flex
+    items-center gap-2 h-[56px]
+    ps-3
+    pe-4
+    rounded-large
+    shadow-elevation1
+    transition-shadow
+    duration-short3
+    ease-standard
+    hover:shadow-elevation2
+    focus:shadow-elevation1;
+  }
+  @media (prefers-color-scheme: dark) {
+    .extended-fab {
+    --state-layer-bg: theme('colors.dark.onPrimaryContainer');
+    }
+  }
+
+  
+  .extended-fab[disabled] {
+    @apply bg-light-onSurface/[0.12] 
+    dark:bg-dark-onSurface/[0.12] 
+    text-light-onSurface/[0.38]
+    dark:text-dark-onSurface/[0.38]
+    shadow-none
+    pointer-events-none;
+    }
+
+  /*
+  *nav-link & nav-item (for sidebar conversation list)
+  */
+  .nav-item { /* Added for better specificity and grouping */
+    /* Base styles for nav items can go here if needed */
+  }
+
+  .nav-link { /* This might be too generic, consider renaming if it conflicts elsewhere */
+    --state-layer-bg: theme('colors.light.onSurfaceVariant');
+    @apply flex
+    items-center
+    gap-3
+    text-labelLarge
+    text-light-onSurfaceVariant
+    dark:text-dark-onSurfaceVariant
+    h-9
+    min-h-[36px]
+    rounded-full
+    ps-4
+    pe-10;
+  }
+
+  
+  .nav-link.active {
+    --state-layer-bg: theme('colors.light.onSecondaryContainer');
+    @apply bg-light-secondaryContainer 
+    dark:bg-dark-secondaryContainer 
+    text-light-onSecondaryContainer
+    dark:text-dark-onSecondaryContainer;
+  }
+
+  @media (prefers-color-scheme: dark) { 
+    .nav-link {
+      --state-layer-bg: theme('colors.dark.onSurfaceVariant');
+    }
+    
+    .nav-link.active {
+      --state-layer-bg: theme('colors.dark.onSecondaryContainer');
+    }
+  } 
+
+  
+  .prompt-field-container {
+    --state-layer-bg: theme('colors.light.onSurfaceVariant');
+    @apply bg-light-surfaceContainer 
+    dark:bg-dark-surfaceContainer
+    min-h-16
+    rounded-full
+    flex
+    items-end
+    flex-wrap
+    p-2
+    cursor-text;
+  }
+  @media (prefers-color-scheme: dark) {
+    .prompt-field-container {
+      --state-layer-bg: theme('colors.dark.onSurfaceVariant');
+    }
+  }
+
+  .prompt-field {
+    @apply text-light-onSurface
+    dark:text-dark-onSurface
+    text-bodyLarge
+    relative
+    outline-none
+    grow
+    mx-4
+    py-3
+    max-h-[230px]
+    overflow-y-auto
+    whitespace-pre-wrap;
+  }
+
+  .prompt-field:empty::after {
+    content: attr(data-placeholder);
+    @apply text-light-onSurfaceVariant/80
+    dark:text-dark-onSurfaceVariant/80
+    absolute
+    left-0
+    top-1/2
+    -translate-y-1/2
+    pointer-events-none;
+  }
+
+  .upload-button-wrapper {
+    @apply relative;
+  }
+  
+  .upload-button-wrapper input[type="file"] {
+    @apply absolute inset-0 w-full h-full opacity-0 cursor-pointer;
+  }
+  
+  .upload-button-wrapper input[type="file"]:disabled {
+    @apply cursor-not-allowed;
+  }
+
+  /**
+  * Context Hub Panel
+  */
+  .context-hub-panel {
+    @apply fixed
+    top-0
+    h-dvh
+    w-[360px]
+    max-w-[90vw]
+    bg-light-surfaceContainer
+    dark:bg-dark-surfaceContainer
+    shadow-elevation3
+    z-40
+    transition-transform
+    duration-medium4
+    ease-standard;
+  }
+
+  .context-hub-header {
+    @apply flex
+    justify-between
+    items-center
+    p-4
+    h-16
+    border-b
+    border-light-outline/20
+    dark:border-dark-outline/20;
+
+    /* Ensure content aligns correctly in RTL */
+    [dir="rtl"] & {
+      @apply flex-row-reverse;
+    }
+  }
+
+  .context-hub-content {
+    @apply h-[calc(100%-4rem)]
+    flex
+    flex-col
+    overflow-hidden;
+  }
+
+  /* Styles for DocumentItemCard (can be expanded) */
+  .document-item-card {
+    /* Base styles are applied with @apply in DocumentItemCard.jsx */
+    /* Add specific non-Tailwind styles here if needed */
+  }
+  
+  /* Styles for DocumentFilters (can be expanded) */
+  .document-filters select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+  
+  /* Dark mode for select arrow */
+  @media (prefers-color-scheme: dark) {
+    .document-filters select {
+       background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    }
+  }
+
+  .icon {
+    @apply flex-shrink-0 select-none;
+    /* Permet de colorer l'icône SVG avec la couleur du texte */
+    filter: brightness(0) saturate(100%) invert(var(--icon-invert, 0));
+  }
+  
+  /* Variables CSS pour les couleurs d'icônes selon le thème */
+  :root {
+    --icon-invert: 0; /* Pour le thème clair */
+  }
+  
+  .dark {
+    --icon-invert: 1; /* Pour le thème sombre */
+  }
+  
+  /* Styles spécifiques pour les icônes dans les boutons */
+  .icon-btn .icon {
+    @apply w-[1em] h-[1em];
+  }
+  
+  /* Pour les icônes qui doivent garder leur couleur originale */
+  .icon.no-filter {
+    filter: none;
+  }
+  
+  /* Animation pour l'icône de synchronisation */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin .icon {
+    animation: spin 1s linear infinite;
+  }
+
+
+
+} /* End of @layer components */
+    
+  
+
+/**
+* UTILITIES
+*/
+  @layer utilities {
+    .img-box {
+    @apply bg-light-surfaceContainerHighest
+      dark:bg-dark-surfaceContainerHighest
+    overflow-hidden;
+    }
+    
+  .img-cover {
+    @apply w-full 
+    h-full
+    object-cover;
+  }
+  
+  .material-symbols-rounded {
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24;
+    @apply w-[1em]
+    min-w-[1em] h-[1em] min-h-[1em]
+    overflow-hidden
+    select-none;
+  }
+}

@@ -1,0 +1,157 @@
+/* user-docs/src/pages/index.module.css - Version améliorée */
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  /* Docusaurus theme variables will handle light/dark mode for background */
+}
+
+.customHeroBanner {
+  background-color: var(--ifm-hero-background-color); /* Uses Docusaurus theme vars */
+  color: var(--ifm-hero-text-color);
+}
+
+.heroLogoContainer {
+  margin-bottom: 2rem;
+}
+
+.heroLogo {
+  height: 80px;
+  width: auto;
+  max-width: 300px;
+}
+
+.heroTitleGradient {
+  /* Clean, professional approach - no wild gradients */
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+  text-fill-color: unset;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  /* Simple, clean color that contrasts well */
+  color: #7C2D12; /* Dark brown - professional and readable */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+html[data-theme='dark'] .heroTitleGradient {
+  /* Clean, light color for dark mode */
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+  text-fill-color: unset;
+  color: #FEF7ED; /* Warm off-white */
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  font-weight: 400; /* Légèrement plus gras */
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2rem;
+  /* Amélioration 4: Couleur plus contrastée pour le sous-titre */
+  color: #78350F; /* Brun foncé pour plus de contraste sur fond orange */
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3); /* Légère ombre claire */
+}
+
+html[data-theme='dark'] .heroSubtitle {
+  color: #FEF3C7; /* Jaune très clair pour le mode sombre */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); /* Ombre plus prononcée */
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Amélioration 5: Boutons plus contrastés */
+.heroButtonPrimary {
+  background-color: #78350F !important; /* Brun foncé */
+  border-color: #78350F !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.heroButtonPrimary:hover {
+  background-color: #92400E !important;
+  border-color: #92400E !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme='dark'] .heroButtonPrimary {
+  background-color: #FBBF24 !important;
+  border-color: #FBBF24 !important;
+  color: #78350F !important; /* Texte foncé sur fond clair */
+}
+
+html[data-theme='dark'] .heroButtonPrimary:hover {
+  background-color: #F59E0B !important;
+  border-color: #F59E0B !important;
+}
+
+.featuresPlaceholder {
+  padding: 4rem 0;
+}
+
+.promoSection {
+  text-align: center;
+  padding: 2.5rem;
+  border-radius: 12px;
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+html[data-theme='light'] .promoSection {
+   background-color: #FFFBF8;
+   color: #201A17; 
+}
+
+html[data-theme='dark'] .promoSection {
+   background-color: #1C1715;
+   color: #EDE0DA; 
+}
+
+.promoSection h2 {
+  font-size: 1.75rem;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+}
+
+html[data-theme='light'] .promoSection h2 {
+  color: #D97706; 
+}
+html[data-theme='dark'] .promoSection h2 {
+  color: #FFB86B; 
+}
+
+.promoSection p {
+  font-size: 1rem;
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+  opacity: 0.85;
+}
+
+.quickLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.quickLinkButton {
+  padding: 0.6rem 1.2rem;
+}

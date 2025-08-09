@@ -1,0 +1,63 @@
+/* technical-docs/src/css/custom.css */
+
+/**
+ * Any CSS customisations belonging to the Docusaurus site can be
+ * placed in this file. Docusaurus will automatically load whatever
+ * styles are defined here.
+ */
+
+/* Global font - DM Sans comme pour la doc utilisateur */
+body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Docusaurus theme variable overrides pour correspondre au thème de l'application */
+:root {
+  --ifm-color-primary: #FB8C00;         /* Orange principal de votre application (thème clair) */
+  --ifm-color-primary-dark: #E87F00;    /* Nuance plus foncée pour hover/active */
+  --ifm-color-primary-darker: #D97706;  /* Encore plus foncée */
+  --ifm-color-primary-darkest: #B45D00; /* La plus foncée */
+  --ifm-color-primary-light: #FFB86B;   /* Nuance plus claire */
+  --ifm-color-primary-lighter: #FFC78E; /* Encore plus claire */
+  --ifm-color-primary-lightest: #FFD6B1;/* La plus claire */
+
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-dark);
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* Couleurs de fond personnalisées pour une meilleure harmonie (optionnel) */
+  /* Si vous souhaitez que le fond de la page de doc technique soit différent */
+  /* Par exemple, un gris très clair pour la documentation technique */
+  /* --ifm-background-color: #f8f9fa; */
+}
+
+html[data-theme='dark'] {
+  --ifm-color-primary: #FFB86B;         /* Orange principal de votre application (thème sombre) */
+  --ifm-color-primary-dark: #FFA752;    /* Nuance plus claire pour "dark" en mode sombre */
+  --ifm-color-primary-darker: #FF963A;  /* Encore plus claire */
+  --ifm-color-primary-darkest: #FF8521; /* La plus claire */
+  --ifm-color-primary-light: #E87F00;   /* Nuance plus foncée pour "light" en mode sombre */
+  --ifm-color-primary-lighter: #D97706; /* Encore plus foncée */
+  --ifm-color-primary-lightest: #B45D00;/* La plus foncée */
+
+  --ifm-link-color: var(--ifm-color-primary);
+  --ifm-link-hover-color: var(--ifm-color-primary-dark);
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  /* --ifm-background-color: #1e1e1e; */ /* Exemple de fond sombre différent */
+}
+
+/* Style pour les diagrammes Mermaid (si vous en utilisez) */
+.language-mermaid {
+  text-align: center; /* Centre les diagrammes */
+  padding: 1rem;
+  border-radius: var(--ifm-code-border-radius);
+  background-color: var(--ifm-code-background);
+}
+
+html[data-theme='dark'] .language-mermaid svg {
+    /* For dark mode, Mermaid SVGs might need specific styling if fill/stroke are hardcoded or inherit poorly */
+}
