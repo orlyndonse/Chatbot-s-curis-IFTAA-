@@ -1,5 +1,5 @@
 ---
-sidebar_position: 12 # Ajustez si nécessaire
+sidebar_position: 12
 title: Conclusion
 ---
 

@@ -14,7 +14,7 @@ Lorsqu'un utilisateur téléverse un ou plusieurs fichiers via l'endpoint `/conv
 1.  **Sauvegarde Physique des Fichiers**:
     * Les fichiers téléversés sont d'abord sauvegardés sur le serveur.
     * Un répertoire spécifique à la conversation est créé (s'il n'existe pas) dans le dossier `Config.UPLOAD_DIR` (par exemple, `uploaded_files/{conversation_uid}/`).
-    * Les noms de fichiers sont "sanétisés" pour éviter les caractères invalides ou les tentatives de traversée de répertoire.
+    * Les noms de fichiers sont "sanétisés" (nettoyés) pour éviter les caractères invalides ou les tentatives de traversée de répertoire, améliorant ainsi la sécurité.
     * Le contenu de chaque fichier est écrit dans son emplacement persistant.
 
 2.  **Enregistrement des Métadonnées en Base de Données (PostgreSQL)**:

@@ -9,166 +9,137 @@ Le fichier `src/rag/utils.py` contient des fonctions utilitaires et des classes 
 
 ## Classe `ArabicTextLoader`
 
-Cette classe hérite de `BaseLoader` de Langchain et est conçue pour charger le contenu de fichiers texte (`.txt`) tout en appliquant un prétraitement spécifique au texte arabe.
+Cette classe hérite de `TextLoader` de Langchain et est conçue pour charger le contenu de fichiers texte (`.txt`) tout en appliquant un prétraitement spécifique au texte arabe.
 
 ```python
-# Extrait de Code_Source/backend/src/rag/utils.py
-from langchain_community.document_loaders.base import BaseLoader
-from langchain_core.documents import Document
-from typing import List, Iterator
-import logging
+from langchain_community.document_loaders import TextLoader
+from typing import List
+from langchain.schema import Document
 
-# ... (fonctions de prétraitement) ...
-
-class ArabicTextLoader(BaseLoader):
-    """Charge un fichier texte en arabe et applique le prétraitement."""
-
-    def __init__(self, file_path: str, encoding: str = "utf-8"):
-        self.file_path = file_path
-        self.encoding = encoding
-
-    def lazy_load(self) -> Iterator[Document]:
-        try:
-            with open(self.file_path, "r", encoding=self.encoding) as f:
-                text = f.read()
-            
-            # Appliquer le prétraitement au texte
-            processed_text = preprocess_arabic_text_for_search(text) # Fonction de prétraitement
-            
-            metadata = {"source": self.file_path}
-            yield Document(page_content=processed_text, metadata=metadata)
-        except Exception as e:
-            logging.error(f"Erreur lors du chargement du fichier {self.file_path}: {e}", exc_info=True)
-            # Retourne un itérateur vide en cas d'erreur pour ne pas bloquer le processus
-            # pour les autres fichiers si silent_errors=True est utilisé dans DirectoryLoader.
-            return iter([])
-
+class ArabicTextLoader(TextLoader):
+    """
+    Chargeur de documents texte qui applique un prétraitement spécifique à l'arabe.
+    """
     def load(self) -> List[Document]:
-        return list(self.lazy_load())
+        """Charge et prétraite le contenu du fichier."""
+        try:
+            with open(self.file_path, 'r', encoding=self.encoding or 'utf-8') as f:
+                text = f.read()
+        except Exception as e:
+            raise RuntimeError(f"Erreur lors de la lecture du fichier {self.file_path}: {e}") from e
+
+        # Appliquer le prétraitement arabe
+        processed_text = pretraiter_texte_arabe(text)
+
+        metadata = {"source": self.file_path}
+        return [Document(page_content=processed_text, metadata=metadata)]
 ```
 
 ### Héritage et Initialisation
 
-- **Héritage** : Hérite de `BaseLoader` pour s'intégrer avec les mécanismes de chargement de documents de Langchain (comme `DirectoryLoader`)
-- **Constructeur** : Prend le chemin du fichier (`file_path`) et l'encodage (par défaut `utf-8`)
+- **Héritage** : Hérite de `TextLoader` pour s'intégrer avec les mécanismes de chargement de documents de Langchain (comme `DirectoryLoader`)
+- **Constructeur** : Utilise le constructeur de `TextLoader` qui prend le chemin du fichier (`file_path`) et l'encodage
 
 ### Méthodes principales
 
-**`lazy_load()`** :
-- Lit le contenu du fichier texte
-- Appelle la fonction `preprocess_arabic_text_for_search(text)` pour nettoyer et normaliser le texte arabe
-- Crée un objet `Document` de Langchain avec le texte prétraité et des métadonnées (la source étant le chemin du fichier)
-- Gère les exceptions lors de la lecture du fichier et retourne un itérateur vide en cas d'erreur pour permettre à `DirectoryLoader` de continuer avec d'autres fichiers si `silent_errors` est activé
-
 **`load()`** :
-- Implémentation standard qui convertit l'itérateur de `lazy_load()` en une liste de `Document`
+- Lit le contenu du fichier texte avec l'encodage spécifié (utf-8 par défaut)
+- Appelle la fonction `pretraiter_texte_arabe(text)` pour nettoyer et normaliser le texte arabe
+- Crée un objet `Document` de Langchain avec le texte prétraité et des métadonnées (la source étant le chemin du fichier)
+- Gère les exceptions lors de la lecture du fichier avec un message d'erreur explicite
 
 **Utilisation** : Cette classe est utilisée par `DirectoryLoader` dans `src/rag/loader.py` pour charger les fichiers `.txt`.
 
-## Fonctions de Prétraitement du Texte Arabe
+## Fonction de Prétraitement du Texte Arabe
 
-Le cœur de ce fichier réside dans ses fonctions de nettoyage et de normalisation du texte arabe, conçues pour améliorer la qualité des embeddings et de la recherche sémantique.
+Le cœur de ce fichier réside dans sa fonction de nettoyage et de normalisation du texte arabe, conçue pour améliorer la qualité des embeddings et de la recherche sémantique.
 
-### 1. `normalize_arabic_text(text)`
+### `pretraiter_texte_arabe(text)`
 
 ```python
-# Extrait de Code_Source/backend/src/rag/utils.py
-def normalize_arabic_text(text: str) -> str:
-    # ... (implémentation détaillée avec expressions régulières) ...
-    text = re.sub(r"[إأآا]", "ا", text)
-    text = re.sub(r"ى", "ي", text)
-    text = re.sub(r"ة", "ه", text)
-    text = re.sub(r"ـ", "", text) # Suppression des tatweel/kashida
-    # ... (autres normalisations) ...
+def pretraiter_texte_arabe(text: str) -> str:
+    """
+    Normalise, reshape et réordonne le texte arabe pour un affichage correct.
+    """
+    text = normalize_unicode(text)
+    text = arabic_reshaper.reshape(text)
+    text = get_display(text)
     return text
 ```
 
-**Objectif** : Unifier différentes formes de caractères arabes pour une représentation standard.
+**Objectif** : Normaliser et reformater le texte arabe pour une représentation optimale.
 
-**Opérations typiques** :
-- Normalisation des variantes de l'Alef (إ, أ, آ) en Alef simple (ا)
-- Normalisation du Alef Maqsura (ى) en Ya (ي)
-- Normalisation du Ta Marbuta (ة) en Ha (ه) (peut être contextuel, à utiliser avec prudence selon le besoin)
-- Suppression des kashida/tatweel (caractères d'allongement)
+**Étapes de traitement** :
 
-### 2. `remove_diacritics(text)`
+1. **`normalize_unicode(text)`** :
+   - Utilise `camel_tools.utils.normalize.normalize_unicode`
+   - Normalise les caractères Unicode arabes
+   - Unifie les différentes formes de caractères pour une représentation standard
 
-```python
-# Extrait de Code_Source/backend/src/rag/utils.py
-def remove_diacritics(text: str) -> str:
-    arabic_diacritics = re.compile(r"""
-                                 ّ    | # Shadda
-                                 َ    | # Fatha
-                                 ً    | # Tanwin Fath
-                                 ُ    | # Damma
-                                 ٌ    | # Tanwin Damm
-                                 ِ    | # Kasra
-                                 ٍ    | # Tanwin Kasr
-                                 ْ    | # Sukun
-                                 ـ     # Tatweel/Kashida (peut aussi être géré dans normalize)
-                             """, re.VERBOSE)
-    text = re.sub(arabic_diacritics, '', text)
-    return text
-```
+2. **`arabic_reshaper.reshape(text)`** :
+   - Utilise la bibliothèque `arabic_reshaper`
+   - Connecte les lettres arabes de manière appropriée
+   - Gère la forme contextuelle des caractères arabes (initiale, médiane, finale, isolée)
 
-**Objectif** : Supprimer les signes diacritiques (harakat) du texte arabe. Cela peut aider à la recherche car la présence ou l'absence de diacritiques peut varier.
+3. **`get_display(text)`** :
+   - Utilise `bidi.algorithm.get_display`
+   - Applique l'algorithme bidirectionnel pour l'affichage correct
+   - Gère l'ordre de lecture de droite à gauche pour l'arabe
 
-**Fonctionnement** : Utilise une expression régulière pour identifier et supprimer les diacritiques courants.
+### Dépendances requises
 
-### 3. `remove_punctuations(text)`
+Le module utilise plusieurs bibliothèques spécialisées pour le traitement du texte arabe :
 
 ```python
-# Extrait de Code_Source/backend/src/rag/utils.py
-def remove_punctuations(text: str) -> str:
-    arabic_punctuations = '''`÷×؛<>_()*&^%][ـ،/:"؟.,'{}~¦+|!"…"–ـ'''
-    english_punctuations = string.punctuation
-    punctuations_list = arabic_punctuations + english_punctuations
-    translator = str.maketrans('', '', punctuations_list)
-    return text.translate(translator)
+import arabic_reshaper
+from bidi.algorithm import get_display
+from camel_tools.utils.normalize import normalize_unicode
 ```
 
-**Objectif** : Supprimer les signes de ponctuation arabes et anglais.
+- **`arabic_reshaper`** : Pour la connexion correcte des lettres arabes
+- **`bidi`** : Pour la gestion de l'affichage bidirectionnel
+- **`camel_tools`** : Boîte à outils complète pour le traitement de l'arabe
 
-**Fonctionnement** : Définit des listes de ponctuations et utilise `str.translate` pour les supprimer.
+## Fonctionnement dans le Pipeline
 
-### 4. `remove_extra_spaces(text)`
+### Intégration avec le Chargement
 
-```python
-# Extrait de Code_Source/backend/src/rag/utils.py
-def remove_extra_spaces(text: str) -> str:
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
-```
+1. **Appel par DirectoryLoader** : Le `DirectoryLoader` dans `loader.py` utilise `ArabicTextLoader` pour les fichiers `.txt`
+2. **Traitement automatique** : Chaque fichier texte arabe est automatiquement prétraité lors du chargement
+3. **Préservation des métadonnées** : Les informations sur la source du document sont conservées
 
-**Objectif** : Remplacer les séquences d'espaces multiples par un seul espace et supprimer les espaces en début et fin de chaîne.
+### Amélioration de la Recherche
 
-### 5. `preprocess_arabic_text_for_search(text)`
+Le prétraitement du texte arabe améliore significativement :
+- **Qualité des embeddings** : Un texte normalisé produit de meilleurs vecteurs de représentation
+- **Consistance** : Différentes écritures du même texte sont normalisées vers une forme standard
+- **Recherche sémantique** : Une meilleure correspondance entre les questions et les documents
 
-Cette fonction orchestre l'application des étapes de prétraitement précédentes dans un ordre logique.
+### Impact sur l'Affichage
 
-```python
-# Extrait de Code_Source/backend/src/rag/utils.py
-def preprocess_arabic_text_for_search(text: str) -> str:
-    if not text:
-        return ""
-    text = remove_diacritics(text)
-    text = normalize_arabic_text(text)
-    # La suppression de la ponctuation est commentée dans le code source fourni.
-    # Si elle était activée : text = remove_punctuations(text)
-    text = remove_extra_spaces(text)
-    return text
-```
+- **Affichage correct** : Le texte arabe s'affiche correctement dans l'interface utilisateur
+- **Lisibilité** : La connexion appropriée des lettres améliore la lisibilité
+- **Bidirectionnalité** : Gestion correcte du mélange de texte arabe (droite à gauche) et latin (gauche à droite)
 
-**Pipeline de traitement** :
-1. Appelle `remove_diacritics`
-2. Appelle `normalize_arabic_text`
-3. Appelle `remove_extra_spaces`
+## Avantages de l'Approche
 
-**Note importante** : Dans le code source fourni, l'appel à `remove_punctuations` est commenté. Si cette étape est souhaitée, elle devrait être décommentée.
+### Spécialisation Linguistique
+- **Optimisation pour l'arabe** : Traitement spécifique aux particularités de l'écriture arabe
+- **Bibliothèques spécialisées** : Utilisation d'outils dédiés au traitement de l'arabe
+- **Qualité professionnelle** : Respect des standards d'affichage et de traitement du texte arabe
 
-## Conclusion
+### Intégration Transparente
+- **Compatible Langchain** : S'intègre parfaitement avec l'écosystème Langchain
+- **Traitement automatique** : Aucune intervention manuelle nécessaire
+- **Préservation des métadonnées** : Maintient toutes les informations sur les documents
 
-Ces utilitaires, en particulier `ArabicTextLoader` et `preprocess_arabic_text_for_search`, sont essentiels pour assurer que les données textuelles en arabe sont dans un format optimal avant d'être utilisées par le modèle d'embedding et le système de recherche sémantique.
+### Extensibilité
+- **Modularité** : La fonction `pretraiter_texte_arabe()` peut être utilisée indépendamment
+- **Personnalisation** : Facile d'ajouter des étapes de prétraitement supplémentaires
+- **Réutilisabilité** : Le même prétraitement peut être appliqué à d'autres types de documents
+
+Ce module est donc essentiel pour assurer que les données textuelles en arabe sont dans un format optimal avant d'être utilisées par le modèle d'embedding et le système de recherche sémantique du pipeline RAG.
 
 ---
-On va passer directement à la section [Pipeline RAG Détaillé](../).
+
+Après avoir vu les utilitaires, nous pouvons maintenant examiner la [Gestion du Vector Store](../rag-components/vectorstore.md) (src/rag/vectorstore.py) pour comprendre comment les documents prétraités sont stockés et indexés.

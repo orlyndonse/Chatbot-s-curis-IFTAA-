@@ -7,17 +7,20 @@ import time
 import logging
 import os
 
+# Origines autorisées pour CORS
 origins = [
-    "http://localhost:3000",
-    os.getenv("FRONTEND_URL")  # Par exemple pour déploiement
+    "http://localhost:3000",  # Frontend en développement
+    os.getenv("FRONTEND_URL")  # Frontend en production
 ]
 
+# Désactivation du logger Uvicorn par défaut
 logger = logging.getLogger("uvicorn.access")
 logger.disabled = True
 
 
 def register_middleware(app: FastAPI):
 
+    # Middleware de logging personnalisé
     @app.middleware("http")
     async def custom_logging(request: Request, call_next):
         start_time = time.time()
@@ -30,6 +33,7 @@ def register_middleware(app: FastAPI):
         print(message)
         return response
 
+    # Middleware CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -38,7 +42,8 @@ def register_middleware(app: FastAPI):
         allow_credentials=True,
     )
 
+    # Middleware de sécurité des hôtes
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1" ,"bookly-api-dc03.onrender.com","0.0.0.0"],
+        allowed_hosts=["localhost", "127.0.0.1", "0.0.0.0"],
     )

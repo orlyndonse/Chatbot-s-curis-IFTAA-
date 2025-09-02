@@ -3,29 +3,31 @@ import os
 import logging
 import time
 
-# Importez les fonctions nécessaires depuis vos modules RAG
+# Importation des modules RAG pour le traitement des documents
 from src.rag.loader import charger_documents, split_documents
 from src.rag.vectorstore import add_documents_to_vectorstore, CHROMA_DB_PATH, COLLECTION_NAME
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Chemin vers le dossier contenant vos documents source
-# Assurez-vous qu'il correspond à l'endroit où vous avez mis les fichiers
+# Chemin vers le dossier contenant les documents sources à indexer
 SOURCE_DOCS_PATH = os.path.join("data", "fiqh_docs")
 
 def indexer():
     """
-    Charge, découpe et indexe les documents dans ChromaDB.
+    Processus complet d'indexation des documents :
+    1. Charge les documents depuis le dossier source
+    2. Découpe les documents en fragments pour optimiser la recherche
+    3. Indexe les fragments dans la base de données vectorielle ChromaDB
     """
     logger.info("--- Démarrage du processus d'indexation RAG ---")
 
-    # Vérifier si le dossier source existe
+    # Vérification de l'existence du dossier source
     if not os.path.isdir(SOURCE_DOCS_PATH):
         logger.error(f"Le dossier source '{SOURCE_DOCS_PATH}' n'existe pas. Veuillez créer ce dossier et y ajouter vos documents.")
         return
 
-    # 1. Charger les documents
+    # Étape 1 : Chargement des documents depuis le système de fichiers
     start_time = time.time()
     logger.info(f"Étape 1/3 : Chargement des documents depuis '{SOURCE_DOCS_PATH}'...")
     try:
@@ -33,12 +35,14 @@ def indexer():
     except Exception as e:
         logger.error(f"Erreur lors du chargement des documents: {e}", exc_info=True)
         return
+    
+    # Vérification que des documents ont été trouvés
     if not documents:
         logger.warning("Aucun document n'a été chargé. Vérifiez le contenu du dossier source et les types de fichiers supportés.")
         return
     logger.info(f"Chargement terminé en {time.time() - start_time:.2f} secondes. {len(documents)} document(s) trouvé(s).")
 
-    # 2. Découper les documents
+    # Étape 2 : Découpage des documents en fragments plus petits
     start_time = time.time()
     logger.info("Étape 2/3 : Découpage des documents...")
     try:
@@ -47,51 +51,37 @@ def indexer():
         logger.error(f"Erreur lors du découpage des documents: {e}", exc_info=True)
         return
 
-    # --- AJOUT DEBUG ---
-    logger.info(f"DEBUG: Nombre de morceaux après découpage: {len(split_docs)}")
-    # -------------------
+    logger.info(f"Nombre de fragments après découpage: {len(split_docs)}")
 
+    # Vérification que le découpage a produit des résultats
     if not split_docs:
-         logger.warning("Aucun morceau n'a été généré après découpage.")
+         logger.warning("Aucun fragment n'a été généré après découpage.")
          return
-    logger.info(f"Découpage terminé en {time.time() - start_time:.2f} secondes. {len(split_docs)} morceau(x) créé(s).") # Modifié pour correspondre au log DEBUG
+    logger.info(f"Découpage terminé en {time.time() - start_time:.2f} secondes. {len(split_docs)} fragment(s) créé(s).")
 
-    # 3. Ajouter les documents au Vector Store (ChromaDB)
+    # Étape 3 : Indexation dans la base de données vectorielle
     start_time = time.time()
     logger.info(f"Étape 3/3 : Ajout des documents au Vector Store ChromaDB (Collection: {COLLECTION_NAME}, Path: {CHROMA_DB_PATH})...")
     logger.warning("Cette étape peut prendre plusieurs minutes en fonction du volume de documents et de la puissance de votre machine...")
 
-    # --- AJOUT DEBUG ---
-    print("DEBUG: Juste avant d'appeler add_documents_to_vectorstore...")
-    # -------------------
     try:
+        # Ajout des fragments au vectorstore avec génération automatique des embeddings
         add_documents_to_vectorstore(split_docs)
-        # --- AJOUT DEBUG ---
-        print("DEBUG: Appel à add_documents_to_vectorstore terminé.")
-        # -------------------
     except Exception as e:
-         # --- AJOUT DEBUG ---
-         print(f"DEBUG: ERREUR interceptée dans indexer: {e}")
-         # -------------------
          logger.error(f"Erreur lors de l'ajout des documents au vectorstore: {e}", exc_info=True)
          return
-    # --- AJOUT DEBUG ---
-    print("DEBUG: Après le bloc try/except de add_documents_to_vectorstore.")
-    # -------------------
+    
     logger.info(f"Ajout au vectorstore terminé en {time.time() - start_time:.2f} secondes.")
 
     logger.info("--- Processus d'indexation RAG terminé avec succès ! ---")
-    logger.info(f"La base de données vectorielle devrait se trouver dans : {os.path.abspath(CHROMA_DB_PATH)}")
+    logger.info(f"La base de données vectorielle se trouve dans : {os.path.abspath(CHROMA_DB_PATH)}")
 
 if __name__ == "__main__":
-    # Assurez-vous que les variables d'environnement nécessaires (comme GOOGLE_API_KEY si nécessaire pour l'embedding) sont chargées
-    # Si vous utilisez python-dotenv, vous pouvez le charger ici :
+    # Point d'entrée du script d'indexation
+    # Note : Assurez-vous que les variables d'environnement nécessaires sont configurées
+    # (comme GOOGLE_API_KEY si requis pour les embeddings)
+    # Pour charger un fichier .env, décommentez les lignes suivantes :
     # from dotenv import load_dotenv
     # load_dotenv()
-    # --- AJOUT DEBUG ---
-    print("DEBUG: Lancement du script indexer_rag.py")
-    # -------------------
+    
     indexer()
-    # --- AJOUT DEBUG ---
-    print("DEBUG: Fin du script indexer_rag.py")
-    # -------------------

@@ -105,11 +105,12 @@ python indexer_rag.py
 ```
 
 ### Prérequis
-Il est recommandé de s'assurer que les variables d'environnement nécessaires (comme `GEMINI_API_KEY` si le modèle d'embedding l'exige lors de l'initialisation du vectorstore) sont disponibles dans l'environnement d'exécution du script.
+Il est recommandé de s'assurer que les variables d'environnement nécessaires sont disponibles dans l'environnement d'exécution du script. Notez que `GEMINI_API_KEY` n'est pas directement requise pour ce script (qui utilise HuggingFace pour les embeddings), mais elle pourrait l'être pour des dépendances indirectes liées au LLM dans d'autres modules du système.
 
 ## Conclusion
 
 Ce script est un outil d'administration essentiel pour la préparation initiale de la base de connaissances RAG. Il permet une indexation en lot efficace et contrôlée des documents sources dans le système.
+
 
 ---
 

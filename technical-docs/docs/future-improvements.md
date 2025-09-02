@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11 # Ajustez si vous avez ajouté/modifié l'ordre des sections précédentes
+sidebar_position: 11
 title: Pistes d'Amélioration
 ---
 
@@ -10,10 +10,10 @@ Bien que l'Assistant RAG Fiqh soit une application fonctionnelle répondant aux 
 ## Améliorations du Backend et du Pipeline RAG
 
 1.  **Gestion de la Confidentialité et Multi-tenance des Documents dans le RAG**:
-    * **Contexte Actuel**: Dans la version actuelle, tous les documents téléversés sont indexés dans une collection ChromaDB partagée, ce qui signifie que le contenu d'un document pourrait potentiellement être utilisé pour répondre aux questions de n'importe quel utilisateur si le système le juge pertinent.
-    * **Amélioration Proposée**: Implémenter une véritable multi-tenance au niveau de la base de données vectorielle pour garantir que les documents téléversés par un utilisateur (ou pour une conversation spécifique) ne sont utilisés que dans ce contexte restreint.
+    * **Contexte Actuel**: Dans la version actuelle, tous les documents téléversés sont indexés dans une collection ChromaDB partagée, mais un filtrage par métadonnées (`document_uid` et `conversation_uid`) est déjà implémenté pour limiter la récupération aux documents pertinents pour une conversation/utilisateur spécifique. Cependant, cela pourrait être renforcé pour une isolation plus stricte.
+    * **Amélioration Proposée**: Améliorer la multi-tenance au niveau de la base de données vectorielle pour garantir une confidentialité accrue et éviter toute fuite potentielle de données entre utilisateurs.
         * **Approche 1 : Collections Distinctes**: Créer une collection ChromaDB distincte par utilisateur ou par conversation. Cela nécessiterait une logique pour sélectionner/créer la bonne collection lors de l'indexation et de la récupération.
-        * **Approche 2 : Filtrage par Métadonnées**: Associer des métadonnées (par exemple, `user_uid`, `conversation_uid`) à chaque segment de document dans la collection ChromaDB partagée. Le `retriever` devrait ensuite être configuré pour filtrer les résultats en fonction de l'utilisateur effectuant la requête. ChromaDB supporte ce type de filtrage.
+        * **Approche 2 : Filtrage par Métadonnées Renforcé**: Étendre les métadonnées existantes (par exemple, en ajoutant `user_uid` explicitement à chaque segment de document dans la collection ChromaDB partagée). Le `retriever` devrait ensuite être configuré pour filtrer strictement les résultats en fonction de l'utilisateur et de la conversation. ChromaDB supporte ce type de filtrage, et l'implémentation actuelle peut être auditée pour des renforcements de sécurité.
     * **Impact**: Amélioration majeure de la confidentialité des données et de la pertinence ciblée des réponses RAG pour chaque utilisateur.
 
 2.  **Optimisation du Retriever**:
@@ -39,7 +39,7 @@ Bien que l'Assistant RAG Fiqh soit une application fonctionnelle répondant aux 
 7.  **Sécurité et Robustesse**:
     * **Validation d'Entrée plus Stricte**: Renforcer la validation pour tous les inputs API.
     * **Audit et Logging de Sécurité**: Mettre en place des logs d'audit pour les actions sensibles.
-    * **Suppression physique des fichiers** : Lors de la suppression d'un document via l'API, envisager la suppression effective du fichier sur le serveur en plus de son enregistrement en base de données et de sa potentielle désindexation du vector store.
+    * **Suppression physique des fichiers**: Lors de la suppression d'un document via l'API, envisager la suppression effective du fichier sur le serveur en plus de son enregistrement en base de données et de sa désindexation du vector store (actuellement marquée comme TODO dans `remove_document_from_context` pour la partie vectorstore).
 
 ## Améliorations du Frontend
 
@@ -75,6 +75,12 @@ Bien que l'Assistant RAG Fiqh soit une application fonctionnelle répondant aux 
 
 * **Documentation API Interactive plus Riche**: Explorer des outils au-delà de Swagger UI/ReDoc pour une documentation API plus interactive si nécessaire.
 * **Tutoriels Vidéo**: Pour la documentation utilisateur, des tutoriels vidéo pourraient être un excellent complément.
+
+## Améliorations Supplémentaires pour la Modularité et la Scalabilité
+
+* **Authentification Avancée**: Ajouter une authentification basée sur JWT pour sécuriser les endpoints API et assurer une isolation stricte des données multi-utilisateurs.
+* **Suppression Complète dans le Vectorstore**: Implémenter la suppression effective des documents dans ChromaDB (actuellement en TODO dans `service.py`), en utilisant des filtres pour supprimer les embeddings associés à un `document_uid`.
+* **Monitoring et Logs**: Intégrer des outils comme Sentry pour le monitoring des erreurs et Prometheus pour les métriques de performance.
 
 Ces pistes ne sont que des suggestions et leur pertinence dépendra des retours des utilisateurs et des objectifs à long terme du projet.
 

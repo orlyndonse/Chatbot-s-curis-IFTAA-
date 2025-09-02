@@ -784,6 +784,26 @@
 
 
 
+  .animate-pulse-once {
+  animation: pulseOnce 0.3s ease-out;
+}
+
+@keyframes pulseOnce {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.animate-pulse-once {
+  animation: pulseOnce 0.3s ease-out;
+}
+
+@keyframes pulseOnce {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+
+
 } /* End of @layer components */
     
   
@@ -814,5 +834,65 @@
     min-w-[1em] h-[1em] min-h-[1em]
     overflow-hidden
     select-none;
+  }
+
+  .direction-rtl {
+    direction: rtl;
+    unicode-bidi: embed; /* Mieux gérer mix LTR/RTL */
+  }
+
+  /* Améliorations pour le contenu en arabe (RTL) */
+  .prose.direction-rtl {
+    text-align: right;
+    direction: rtl;
+    font-family: 'Arial', 'Tahoma', sans-serif; /* Polices qui supportent bien l'arabe */
+    line-height: 1.8; /* Meilleur espacement pour l'arabe */
+  }
+
+  .prose.direction-rtl h1,
+  .prose.direction-rtl h2,
+  .prose.direction-rtl h3,
+  .prose.direction-rtl h4,
+  .prose.direction-rtl h5,
+  .prose.direction-rtl h6 {
+    text-align: right;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .prose.direction-rtl ul,
+  .prose.direction-rtl ol {
+    text-align: right;
+    padding-right: 1.5rem;
+    padding-left: 0;
+    list-style-position: inside; /* Important pour RTL */
+  }
+
+  .prose.direction-rtl blockquote {
+    border-right: 4px solid currentColor;
+    border-left: none;
+    padding-right: 1rem;
+    padding-left: 0;
+    margin-right: 0;
+  }
+
+  .prose.direction-rtl code {
+    direction: ltr; /* Le code reste LTR même dans un contexte RTL */
+  }
+
+  .prose.direction-rtl pre {
+    direction: ltr; /* Les blocs de code restent LTR */
+    text-align: left;
+  }
+
+  /* Animation pour le curseur de streaming */
+  .prose .streaming-cursor {
+    animation: blink 1s infinite;
+    color: currentColor;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
   }
 }

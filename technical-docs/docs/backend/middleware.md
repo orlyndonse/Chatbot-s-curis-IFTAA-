@@ -19,7 +19,6 @@ Dans cette application, les middlewares sont utilisés pour :
 La fonction principale `register_middleware(app: FastAPI)` est appelée dans `src/__init__.py` pour ajouter les middlewares à l'instance de l'application FastAPI.
 
 ```python
-# Extrait de Code_Source/backend/src/middleware.py
 from fastapi import FastAPI, status
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
@@ -29,20 +28,20 @@ import time
 import logging
 import os
 
-# Configuration des origines pour CORS
+# Origines autorisées pour CORS
 origins = [
-    "http://localhost:3000", # Pour le développement local du frontend
-    os.getenv("FRONTEND_URL")  # Pour l'URL du frontend en production (via variable d'env)
+    "http://localhost:3000",  # Frontend en développement
+    os.getenv("FRONTEND_URL")  # Frontend en production
 ]
 
-# Désactivation du logger Uvicorn par défaut pour le remplacer par un custom
+# Désactivation du logger Uvicorn par défaut
 logger = logging.getLogger("uvicorn.access")
 logger.disabled = True
 
 
 def register_middleware(app: FastAPI):
 
-    # 1. Middleware de Logging Personnalisé
+    # Middleware de logging personnalisé
     @app.middleware("http")
     async def custom_logging(request: Request, call_next):
         start_time = time.time()
@@ -50,34 +49,34 @@ def register_middleware(app: FastAPI):
         response = await call_next(request)
         processing_time = time.time() - start_time
 
-        # Format du message de log
         message = f"{request.client.host}:{request.client.port} - {request.method} - {request.url.path} - {response.status_code} completed after {processing_time}s"
 
-        print(message) # Affiche le log dans la console
+        print(message)
         return response
 
-    # 2. Middleware CORS (Cross-Origin Resource Sharing)
+    # Middleware CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins, # Liste des origines autorisées
-        allow_methods=["*"],   # Autorise toutes les méthodes HTTP (GET, POST, PUT, etc.)
-        allow_headers=["*"],   # Autorise tous les en-têtes HTTP
-        allow_credentials=True, # Autorise les cookies/authentification à être envoyés avec les requêtes
+        allow_origins=origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=True,
     )
 
-    # 3. Middleware TrustedHost
+    # Middleware de sécurité des hôtes
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1", "bookly-api-dc03.onrender.com", "0.0.0.0"], # Hôtes autorisés
+        allowed_hosts=["localhost", "127.0.0.1", "0.0.0.0"],
     )
 ```
 
 ## Configuration des Origines CORS
 
 ```python
+# Origines autorisées pour CORS
 origins = [
-    "http://localhost:3000", # Pour le développement local du frontend
-    os.getenv("FRONTEND_URL")  # Pour l'URL du frontend en production (via variable d'env)
+    "http://localhost:3000",  # Frontend en développement
+    os.getenv("FRONTEND_URL")  # Frontend en production
 ]
 ```
 
@@ -116,7 +115,6 @@ La liste des origines autorisées est configurée pour s'adapter aux différents
 **Configuration** :
 - **allowed_hosts** : Une liste des noms d'hôte ou adresses IP autorisés. Dans ce cas, elle inclut :
   - `localhost` et `127.0.0.1` pour le développement local
-  - `bookly-api-dc03.onrender.com` pour l'environnement de production (exemple)
   - `0.0.0.0` pour les configurations de déploiement spécifiques
 
 > **Important** : Il est crucial de configurer cette liste correctement pour les environnements de production afin d'assurer la sécurité de l'application.

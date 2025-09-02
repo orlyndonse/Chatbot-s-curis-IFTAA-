@@ -17,12 +17,12 @@ Ce module a pour objectif de :
 
 ## Structure du Fichier
 
-Le fichier définit une classe `Settings` qui hérite de `BaseSettings` de Pydantic. Chaque attribut de cette classe représente un paramètre de configuration.
+Le fichier commence par les imports nécessaires, puis définit une classe `Settings` qui hérite de `BaseSettings` de Pydantic. Chaque attribut de cette classe représente un paramètre de configuration.
 
 ```python
-# Extrait de Code_Source/backend/src/config.py
-from pydantic_settings import BaseSettings, SettingsConfigDict
+# src/config.py
 import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -44,12 +44,14 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     GEMINI_API_KEY: str
 
+    # Répertoire de base pour les fichiers uploadés
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploaded_files")
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 Config = Settings()
 
+# Création du répertoire d'upload s'il n'existe pas
 if not os.path.exists(Config.UPLOAD_DIR):
     os.makedirs(Config.UPLOAD_DIR, exist_ok=True)
 ```
@@ -85,7 +87,7 @@ Voici les principaux paramètres définis et leur utilité :
 
 ### Stockage de Fichiers
 
-- **UPLOAD_DIR** (str, défaut: chemin vers `Code_Source/backend/uploaded_files`) : Le chemin absolu du répertoire sur le serveur où les fichiers téléversés par les utilisateurs seront stockés physiquement. Le code s'assure que ce répertoire existe au démarrage.
+- **UPLOAD_DIR** (str, défaut: chemin vers `uploaded_files`) : Le chemin absolu du répertoire sur le serveur où les fichiers téléversés par les utilisateurs seront stockés physiquement. Le répertoire est automatiquement créé au niveau du backend grâce au calcul de chemin avec `os.path.join()`.
 
 ## Chargement de la Configuration
 
@@ -109,9 +111,12 @@ Une instance de la classe `Settings` est créée sous le nom `Config`. C'est cet
 À la fin du fichier, un bloc de code vérifie l'existence du répertoire défini par `Config.UPLOAD_DIR` et le crée s'il n'existe pas. Cela garantit que l'application dispose d'un endroit où sauvegarder les fichiers dès son démarrage.
 
 ```python
+# Création du répertoire d'upload s'il n'existe pas
 if not os.path.exists(Config.UPLOAD_DIR):
     os.makedirs(Config.UPLOAD_DIR, exist_ok=True)
 ```
+
+La fonction `os.makedirs()` avec le paramètre `exist_ok=True` permet de créer le répertoire et tous les répertoires parents nécessaires sans générer d'erreur si le répertoire existe déjà.
 
 ## Avantages de cette Approche
 

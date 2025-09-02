@@ -1,48 +1,68 @@
-# src/conversations/schemas.py
 import uuid
 from datetime import datetime
 from typing import List, Optional, Annotated
-from pydantic import BaseModel, Field, ConfigDict # Ensure ConfigDict is imported
+from pydantic import BaseModel, Field, ConfigDict
 
-# --- Message Schemas ---
-# ... (Message schemas remain the same) ...
+# ===========================
+# SCHÉMAS DE MESSAGE
+# ===========================
+
 class MessageBase(BaseModel):
+    """Modèle de base pour les messages avec prompt et réponse optionnels."""
     prompt: Optional[str] = None
     response: Optional[str] = None
 
 class MessageModel(MessageBase):
+    """Modèle complet de message avec métadonnées."""
     uid: uuid.UUID
     conversation_uid: uuid.UUID
     user_uid: uuid.UUID 
     created_at: datetime
 
 class MessageCreateModel(BaseModel):
+    """Modèle pour la création d'un nouveau message."""
     prompt: str 
 
-# --- Conversation Schemas ---
-# ... (Conversation schemas remain the same) ...
+class MessageEditModel(BaseModel):
+    """Modèle pour l'édition d'un message existant."""
+    new_prompt: str
+
+# ===========================
+# SCHÉMAS DE CONVERSATION
+# ===========================
+
 class ConversationBase(BaseModel):
+    """Modèle de base pour les conversations."""
     title: str = Field(..., max_length=100)
 
 class ConversationCreateModel(BaseModel):
+    """Modèle pour la création d'une nouvelle conversation."""
     title: Optional[str] = Field(None, max_length=100)
     first_prompt: Optional[str] = None
 
 class ConversationModel(ConversationBase):
+    """Modèle complet de conversation avec métadonnées."""
+    model_config = ConfigDict(from_attributes=True)
+    
     uid: uuid.UUID
     user_uid: uuid.UUID
     created_at: datetime
     update_at: datetime
-    # If you want DocumentModel to be usable in from_orm, this model also needs the config
-    # if it's ever created from an ORM object directly.
-    model_config = ConfigDict(from_attributes=True)
 
+class ConversationRenameModel(BaseModel):
+    """Modèle pour renommer une conversation existante."""
+    new_title: Annotated[str, Field(min_length=1, max_length=100)]
 
-# --- Document Schemas ---
+# ===========================
+# SCHÉMAS DE DOCUMENT
+# ===========================
+
 class DocumentModel(BaseModel):
-    # --- ADD THIS LINE ---
+    """
+    Modèle pour les documents associés aux conversations.
+    Inclut le statut d'activation pour le contrôle du contexte RAG.
+    """
     model_config = ConfigDict(from_attributes=True)
-    # --- END ADDITION ---
 
     uid: uuid.UUID
     filename: str = Field(..., max_length=255)
@@ -52,17 +72,35 @@ class DocumentModel(BaseModel):
     mime_type: str = Field(..., max_length=100)
     is_active: bool = Field(default=True)
 
-# Schema for returning a conversation with its messages and documents
+class DocumentUploadResponse(BaseModel):
+    """Réponse pour l'upload de documents avec gestion d'erreurs."""
+    message: str
+    documents: List[DocumentModel]
+    errors: Optional[List[dict]] = None
+
+class DocumentDeleteResponse(BaseModel):
+    """Réponse pour la suppression de documents."""
+    message: str
+
+# ===========================
+# SCHÉMAS COMPOSITES
+# ===========================
+
 class ConversationDetailModel(ConversationModel):
-    # This model also needs the config if it's created via from_orm
+    """
+    Modèle détaillé d'une conversation incluant ses messages et documents.
+    Utilisé pour les vues complètes de conversation.
+    """
     model_config = ConfigDict(from_attributes=True)
     
     messages: List[MessageModel] = []
     documents: List[DocumentModel] = []
 
-# Schema for user data including conversations
 class UserConversationsModel(BaseModel):
-    # This model also needs the config if it's created via from_orm
+    """
+    Modèle utilisateur avec toutes ses conversations.
+    Utilisé pour les vues de profil utilisateur.
+    """
     model_config = ConfigDict(from_attributes=True)
 
     uid: uuid.UUID
@@ -74,17 +112,3 @@ class UserConversationsModel(BaseModel):
     created_at: datetime
     update_at: datetime
     conversations: List[ConversationModel] = []
-
-class MessageEditModel(BaseModel):
-    new_prompt: str
-
-class ConversationRenameModel(BaseModel):
-    new_title: Annotated[str, Field(min_length=1, max_length=100)]
-
-class DocumentUploadResponse(BaseModel): # This is what your route should ideally return
-    message: str
-    documents: List[DocumentModel] # List of successfully processed document metadata
-    errors: Optional[List[dict]] = None
-
-class DocumentDeleteResponse(BaseModel):
-    message: str

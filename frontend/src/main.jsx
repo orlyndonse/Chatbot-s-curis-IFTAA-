@@ -5,7 +5,7 @@ import router from './routers/routes'
 import './index.css'
 import { UserProvider } from './contexts/UserContext' 
 import SnackbarProvider from './contexts/SnackbarContext'
-import { LanguageProvider } from './contexts/LanguageContext' // <- Importer le nouveau provider
+import { LanguageProvider } from './contexts/LanguageContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

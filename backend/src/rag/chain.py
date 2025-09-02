@@ -1,22 +1,23 @@
-# src/rag/chain.py
-import os
 import logging
-from typing import List, Tuple, Optional
-from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import List, Optional, Tuple
+import asyncio
+
 from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
 from langchain.prompts import PromptTemplate
 from langchain_core.documents import Document as LangchainDocument
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-# Importe les fonctions/classes nécessaires depuis nos modules et config
-from .vectorstore import get_filtered_retriever
 from src.config import Config
+from .vectorstore import get_filtered_retriever
 
-# Configuration du logger
+import re 
+
+# Configuration du système de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- Template de Prompt (depuis le notebook) ---
-# Ce template sera utilisé pour formuler la question finale au LLM avec le contexte trouvé
+# Template de prompt pour le modèle en langue arabe
+# Template de prompt pour le modèle en langue arabe AVEC FORMATAGE MARKDOWN
 template_arabe = """أنت خبير في الفقه المالكي.
 
 مهمتك هي الإجابة على الأسئلة المتعلقة بالفقه المالكي. يجب أن تكون جميع إجاباتك باللغة العربية الفصحى حصراً.
@@ -37,92 +38,64 @@ template_arabe = """أنت خبير في الفقه المالكي.
 
 الإجابة:"""
 
-# --- Variable globale pour le LLM uniquement ---
+# Instance globale du modèle LLM (pattern singleton)
 _llm_instance = None
 
 def get_llm():
-    """Initialise (si nécessaire) et retourne l'instance du LLM."""
+    """Initialise et retourne l'instance du LLM (pattern singleton)."""
     global _llm_instance
     if _llm_instance is None:
         logger.info("Initialisation du LLM Google Generative AI (gemini-1.5-flash)...")
         if not Config.GEMINI_API_KEY:
-            logger.error("La clé API Google (GEMINI_API_KEY) n'est pas configurée dans src/config.py ou les variables d'environnement.")
-            raise ValueError("Clé API Google manquante.")
+            raise ValueError("Clé API Google (GEMINI_API_KEY) manquante.")
         try:
             _llm_instance = ChatGoogleGenerativeAI(
                 model="gemini-1.5-flash",
-                temperature=0.2, # Faible température pour des réponses plus factuelles
-                convert_system_message_to_human=True, # Bonne pratique pour certains modèles Gemini
-                google_api_key=Config.GEMINI_API_KEY
+                temperature=0.2,
+                convert_system_message_to_human=True,
+                google_api_key=Config.GEMINI_API_KEY,
+                streaming=True  # Activer explicitement
             )
             logger.info("LLM initialisé avec succès.")
         except Exception as e:
             logger.error(f"Erreur lors de l'initialisation du LLM: {e}", exc_info=True)
-            _llm_instance = None # Assure qu'on sait qu'il y a eu un échec
-            raise # Relance l'erreur pour que l'appelant gère
+            raise
     return _llm_instance
 
 def initialize_rag_chain():
-    """
-    Initialise seulement le LLM au démarrage de l'application.
-    Cette fonction remplace l'ancienne initialize_rag_chain().
-    """
-    logger.info("Initialisation du LLM au démarrage de l'application...")
-    try:
-        llm = get_llm()
-        if llm is None:
-            raise RuntimeError("Impossible d'initialiser le LLM.")
-        logger.info("LLM prêt pour l'utilisation.")
-    except Exception as e:
-        logger.error(f"Erreur lors de l'initialisation du LLM au démarrage: {e}", exc_info=True)
-        raise
+    """Initialise le LLM au démarrage de l'application."""
+    logger.info("Pré-initialisation du LLM...")
+    get_llm()
 
 def create_contextual_rag_chain(
-    active_document_uids: List[str], 
-    chat_history: List[Tuple[str, str]]
+    active_document_uids: List[str]
 ) -> Tuple[ConversationalRetrievalChain, int]:
     """
     Crée une chaîne RAG contextualisée pour une conversation spécifique.
     
     Args:
-        active_document_uids: Liste des UIDs des documents actifs pour cette conversation
-        chat_history: Historique de la conversation
+        active_document_uids: Liste des identifiants uniques des documents à utiliser
     
     Returns:
-        Tuple contenant la chaîne RAG et le nombre de documents actifs
+        Tuple contenant la chaîne RAG configurée et le nombre de documents actifs
     """
-    logger.info(f"Création d'une chaîne RAG contextualisée avec {len(active_document_uids)} documents actifs")
-    
+    logger.info(f"Création d'une chaîne RAG avec {len(active_document_uids)} documents actifs")
     try:
-        # 1. Obtenir le LLM
         llm = get_llm()
-        if llm is None:
-            raise RuntimeError("LLM non disponible.")
-
-        # 2. Créer le retriever filtré
         retriever = get_filtered_retriever(active_document_uids, k=7)
-        logger.info(f"Retriever filtré créé pour {len(active_document_uids)} documents")
+        QA_PROMPT = PromptTemplate(template=template_arabe, input_variables=["context", "question"])
 
-        # 3. Créer le Prompt Template
-        QA_PROMPT = PromptTemplate(
-            template=template_arabe, 
-            input_variables=["context", "question"]
-        )
-
-        # 4. Créer la Chaîne Conversationnelle RAG
         rag_chain = ConversationalRetrievalChain.from_llm(
             llm=llm,
             retriever=retriever,
             return_source_documents=True,
             combine_docs_chain_kwargs={"prompt": QA_PROMPT},
-            # verbose=True # Décommentez pour debug
         )
         
         logger.info("Chaîne RAG contextualisée créée avec succès")
         return rag_chain, len(active_document_uids)
-
     except Exception as e:
-        logger.error(f"Erreur lors de la création de la chaîne RAG contextualisée: {e}", exc_info=True)
+        logger.error(f"Erreur lors de la création de la chaîne RAG: {e}", exc_info=True)
         raise
 
 async def generate_contextual_rag_response(
@@ -134,12 +107,12 @@ async def generate_contextual_rag_response(
     Génère une réponse RAG en utilisant uniquement les documents actifs de la conversation.
     
     Args:
-        question: La question de l'utilisateur
-        active_document_uids: Liste des UIDs des documents actifs
-        chat_history: Historique de la conversation
+        question: La question posée par l'utilisateur
+        active_document_uids: Liste des identifiants des documents à consulter
+        chat_history: Historique des échanges précédents
     
     Returns:
-        Tuple contenant (réponse, documents_sources, nombre_documents_actifs)
+        Tuple contenant (réponse_générée, documents_sources_utilisés, nombre_documents_actifs)
     """
     logger.info(f"Génération d'une réponse RAG contextualisée")
     logger.info(f"Question: {question[:100]}...")
@@ -147,10 +120,8 @@ async def generate_contextual_rag_response(
     logger.info(f"Historique: {len(chat_history)} échanges")
     
     try:
-        # Créer la chaîne RAG contextualisée
-        rag_chain, doc_count = create_contextual_rag_chain(active_document_uids, chat_history)
+        rag_chain, doc_count = create_contextual_rag_chain(active_document_uids)
         
-        # Générer la réponse
         result = await rag_chain.ainvoke({
             "question": question,
             "chat_history": chat_history
@@ -168,6 +139,76 @@ async def generate_contextual_rag_response(
         return ai_response_text, source_documents, doc_count
 
     except Exception as e:
-        logger.error(f"Erreur lors de la génération de la réponse RAG contextualisée: {e}", exc_info=True)
-        error_message = "Désolé, je n'ai pas pu traiter votre demande en raison d'une erreur interne."
-        return error_message, None, len(active_document_uids)
+        logger.error(f"Erreur lors de la génération de la réponse RAG: {e}", exc_info=True)
+        return "Désolé, je n'ai pas pu traiter votre demande.", None, len(active_document_uids)
+
+def simulate_streaming(text: str, chunk_size: int = 80, delay: float = 0.08):
+    """
+    Version améliorée qui préserve la structure Markdown.
+    """
+    # Trouver les points naturels de rupture (fin de phrase, après ponctuation)
+    sentences = re.split(r'([.!?]+\s+)', text)
+    
+    current_chunk = ""
+    for i in range(0, len(sentences), 2):
+        if i + 1 < len(sentences):
+            sentence = sentences[i] + sentences[i + 1]
+        else:
+            sentence = sentences[i]
+            
+        if not sentence.strip():
+            continue
+            
+        if len(current_chunk + sentence) > chunk_size and current_chunk:
+            yield current_chunk.strip()
+            current_chunk = sentence
+        else:
+            current_chunk += sentence
+    
+    if current_chunk.strip():
+        yield current_chunk.strip()
+
+
+async def stream_contextual_rag_response(
+    question: str,
+    active_document_uids: List[str],
+    chat_history: List[Tuple[str, str]]
+):
+    """
+    Génère une réponse RAG avec simulation de streaming.
+    
+    Args:
+        question: La question posée par l'utilisateur
+        active_document_uids: Liste des identifiants des documents à consulter
+        chat_history: Historique des échanges précédents
+    
+    Yields:
+        str: Chunks de la réponse simulant un streaming
+    """
+    logger.info(f"Début du streaming RAG pour la question: {question[:50]}...")
+    
+    try:
+        # Génération de la réponse complète d'abord
+        rag_chain, _ = create_contextual_rag_chain(active_document_uids)
+        
+        result = await rag_chain.ainvoke({
+            "question": question,
+            "chat_history": chat_history
+        })
+        
+        ai_response_text = result.get("answer", "Désolé, une erreur est survenue.")
+        logger.info(f"Réponse complète générée ({len(ai_response_text)} caractères)")
+        
+        # Simulation du streaming par chunks
+        chunk_count = 0
+        for chunk in simulate_streaming(ai_response_text, chunk_size=20, delay=0.05):
+            chunk_count += 1
+            logger.info(f"Streaming chunk {chunk_count}: '{chunk}' (length: {len(chunk)})")
+            yield chunk
+            await asyncio.sleep(0.05)  # Petit délai pour simuler le streaming
+            
+        logger.info(f"Streaming terminé - {chunk_count} chunks envoyés")
+                    
+    except Exception as e:
+        logger.error(f"Erreur pendant le streaming de la réponse RAG: {e}", exc_info=True)
+        yield "Désolé, une erreur interne est survenue."

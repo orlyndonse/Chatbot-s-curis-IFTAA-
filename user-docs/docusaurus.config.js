@@ -1,15 +1,13 @@
-// @ts-check
 import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  // --- Site Metadata ---
-  title: 'Assistant RAG Fiqh - Guide Utilisateur', // French Title
-  tagline: 'Votre guide pour poser des questions et obtenir des réponses à partir de textes du Fiqh Maliki', // French Tagline
+  title: 'Assistant RAG Fiqh - Guide Utilisateur', 
+  tagline: 'Votre guide pour poser des questions et obtenir des réponses à partir de textes du Fiqh Maliki',
   favicon: 'img/favicon.svg',
 
   url: 'https://YOUR_SITE_URL_HERE.com', 
-  baseUrl: '/my-docs/', // As per your current setup
+  baseUrl: '/my-docs/',
   organizationName: 'YOUR_GITHUB_ORG_OR_USERNAME_HERE', 
   projectName: 'YOUR_DOCS_REPO_NAME_HERE', 
 
@@ -21,7 +19,7 @@ const config = {
     locales: ['fr'],
   },
 
-  stylesheets: [ // Assuming DM Sans is still desired
+  stylesheets: [ 
     'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap',
   ],
 
@@ -32,7 +30,7 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          // editUrl: 'YOUR_EDIT_URL_HERE', // Optional
+          
         },
         blog: false,
         theme: {
@@ -46,9 +44,9 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'Guide Assistant RAG Fiqh', // French Navbar Title
+        title: 'Guide Assistant RAG Fiqh', 
         logo: {
-          alt: 'Logo Assistant RAG Fiqh', // French Alt Text
+          alt: 'Logo Assistant RAG Fiqh',
           src: 'img/logo-light.svg',    
           srcDark: 'img/logo-dark.svg',
         },
@@ -57,11 +55,11 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar', 
             position: 'left',
-            label: 'Manuel Utilisateur', // French Label
+            label: 'Manuel Utilisateur',
           },
           {
-            href: 'https://github.com/YOUR_USERNAME/YOUR_MAIN_PROJECT_REPO_NAME', // Keep as your actual link
-            label: 'Projet GitHub', // French Label
+            href: 'https://github.com/orlyndonse/Chatbot-s-curis-IFTAA-',
+            label: 'Projet GitHub',
             position: 'right',
           },
         ],
@@ -70,34 +68,34 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Guide', // Already French-friendly
+            title: 'Guide', 
             items: [
               {
-                label: 'Introduction', // Already French-friendly
-                to: '/docs/introduction/welcome', // Adjusted to match sidebar
+                label: 'Introduction',
+                to: '/docs/introduction/welcome', 
               },
             ],
           },
           {
-            title: 'Communauté', // French Title
+            title: 'Communauté',
             items: [
               {
-                label: 'Signaler un Problème (App)', // French Label
-                href: 'https://github.com/YOUR_USERNAME/YOUR_MAIN_PROJECT_REPO_NAME/issues', // Keep as your actual link
+                label: 'Signaler un Problème (App)',
+                href: 'https://github.com/orlyndonse/Chatbot-s-curis-IFTAA-/issues', 
               },
             ],
           },
           {
-            title: 'Plus', // French Title
+            title: 'Plus',
             items: [
               {
-                label: 'Projet de l\'Application (GitHub)', // French Label
-                href: 'https://github.com/YOUR_USERNAME/YOUR_MAIN_PROJECT_REPO_NAME', // Keep as your actual link
+                label: 'Projet de l\'Application (GitHub)', 
+                href: 'https://github.com/orlyndonse/Chatbot-s-curis-IFTAA-', 
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Assistant RAG Fiqh. Créé avec Docusaurus.`, // French Copyright
+        copyright: `Copyright © ${new Date().getFullYear()} Assistant RAG Fiqh. Créé avec Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,

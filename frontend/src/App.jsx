@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { motion } from 'framer-motion';
 import { useLoaderData, useNavigate } from 'react-router-dom';
 import { useToggle } from './hooks/useToggle';
 import { useSnackbar } from './hooks/useSnackbar';
 import { fetchWithAuth } from './utils/fetchWithAuth';
 import { useLanguage } from './contexts/LanguageContext';
+
+
 
 import PageTitle from './components/PageTitle';
 import TopAppBar from './components/TopAppBar';
@@ -15,12 +19,15 @@ import Greetings from './pages/Greetings';
 import { CircularProgress } from './components/Progress';
 import { IconBtn } from './components/Button';
 import DocumentPreview from './components/DocumentPreview';
+import StreamingMarkdown from './components/StreamingMarkdown';
+import LogsPanel from './components/LogsPanel';
 
 const App = () => {
   const { user, conversations: loadedConversations, initialMessages: loadedMessages } = useLoaderData();
   const navigate = useNavigate();
   const [isSidebarOpen, toggleSidebar] = useToggle(window.innerWidth >= 1024);
   const [isContextHubOpen, toggleContextHub] = useToggle(false);
+  const [isLogsPanelOpen, toggleLogsPanel] = useToggle(false);
   const { showSnackbar } = useSnackbar();
   const { language } = useLanguage();
 
@@ -51,6 +58,7 @@ const App = () => {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [documentToPreview, setDocumentToPreview] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [logs, setLogs] = useState([]);
 
   const messagesEndRef = useRef(null);
   const editInputRef = useRef(null);
@@ -93,7 +101,7 @@ const App = () => {
     } finally {
       setIsLoadingData(false);
     }
-  }, [showSnackbar, handleCancelEdit, handleCancelRename, activeConversation?.uid, currentMessages.length]);
+  }, [showSnackbar, handleCancelEdit, handleCancelRename, activeConversation?.uid]);
 
   useEffect(() => { if (activeConversation?.uid) { fetchConversationData(activeConversation.uid); } else { setCurrentMessages([]); setDocumentsInContext([]); setCurrentContextSize(0); setIsLoadingData(false);}}, [activeConversation, fetchConversationData]);
     
@@ -102,16 +110,19 @@ const App = () => {
   const handleNewConversationRequest = useCallback(() => { handleCancelEdit(); handleCancelRename(); setActiveConversation(null); if (window.innerWidth < 1024 && isSidebarOpen) toggleSidebar();}, [isSidebarOpen, toggleSidebar, handleCancelEdit, handleCancelRename]);
 
   const handleSendMessage = useCallback(async (promptText) => {
-    if (isEditingMessage || isSendingMessage || isCreatingConversation || renamingConvId) {
+    if (isSendingMessage || isCreatingConversation || renamingConvId) {
       showSnackbar({ message: "Veuillez attendre la fin de l'opération en cours.", type: 'info' });
       return;
     }
     handleCancelEdit();
     setIsSendingMessage(true);
+    setLogs([]); // Réinitialise les logs à chaque nouvelle requête
+  
     let targetConversation = activeConversation;
     const tempPromptId = `temp-prompt-${Date.now()}`;
     let createdConversationLocally = false;
-
+  
+    // --- 1. Gestion optimiste du prompt et de la conversation ---
     try {
       const optimisticPromptMessage = {
         uid: tempPromptId,
@@ -119,10 +130,9 @@ const App = () => {
         prompt: promptText,
         response: null,
         created_at: new Date().toISOString(),
-        isLoading: true,
       };
-
-      if (!targetConversation) { 
+  
+      if (!targetConversation) {
         setIsCreatingConversation(true);
         const newTitle = promptText.substring(0, 30) + (promptText.length > 30 ? '...' : '');
         const newConversation = await fetchWithAuth('/api/v1/conversations/', {
@@ -130,57 +140,152 @@ const App = () => {
           body: JSON.stringify({ title: newTitle }),
         });
         setIsCreatingConversation(false);
-        if (!newConversation?.uid) throw new Error("Création de la conversation a échoué.");
-
-        setAllConversations(prev => [newConversation, ...prev].sort((a, b) => new Date(b.update_at || b.created_at) - new Date(a.update_at || a.created_at)));
-        setActiveConversation(newConversation); 
+        if (!newConversation?.uid) throw new Error("La création de la conversation a échoué.");
+        
+        setAllConversations(prev => [newConversation, ...prev]);
+        setActiveConversation(newConversation);
         targetConversation = newConversation;
         createdConversationLocally = true;
+        setCurrentMessages([optimisticPromptMessage]);
         
-        optimisticPromptMessage.conversation_uid = targetConversation.uid;
-        setCurrentMessages([optimisticPromptMessage]); 
+        // Ajouter un log pour la création de conversation
+        setLogs(prev => [...prev, `INFO: Nouvelle conversation créée - ID: ${newConversation.uid}`]);
       } else {
-        optimisticPromptMessage.conversation_uid = targetConversation.uid;
         setCurrentMessages(prev => [...prev, optimisticPromptMessage]);
       }
-
-      const newMessagePair = await fetchWithAuth(
-        `/api/v1/conversations/${targetConversation.uid}/messages`,
-        { method: 'POST', body: JSON.stringify({ prompt: promptText }) }
-      );
-
-      if (!newMessagePair?.uid) throw new Error("L'envoi du message ou la réception de la réponse a échoué.");
+  
+      // --- 2. Préparation pour la réponse en streaming ---
+      const tempResponseId = `temp-response-${Date.now()}`;
+      const optimisticResponseMessage = {
+        uid: tempResponseId,
+        prompt: null, // C'est une réponse, pas un prompt
+        response: '', // Commence avec une réponse vide
+        isLoading: true, // Pour afficher un indicateur de chargement
+        created_at: new Date().toISOString(),
+      };
+      // Ajoute immédiatement le conteneur de réponse vide à l'UI
+      setCurrentMessages(prev => [...prev, optimisticResponseMessage]);
       
-      setCurrentMessages(prev =>
-        prev.map(msg =>
-          msg.uid === tempPromptId ? { ...newMessagePair, isLoading: false } : msg
-        ).filter(msg => msg.uid) 
+      // Log du début du streaming
+      setLogs(prev => [...prev, `INFO: Début du streaming pour la conversation ${targetConversation.uid}`]);
+      
+      // --- 3. Appel streaming corrigé ---
+      const token = localStorage.getItem("awesomeLeadsToken");
+      const response = await fetch(
+        `http://localhost:8000/api/v1/conversations/${targetConversation.uid}/messages/stream`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ prompt: promptText })
+        }
       );
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        setLogs(prev => [...prev, `ERROR: Erreur serveur (${response.status}): ${errorText}`]);
+        throw new Error(`Erreur du serveur (${response.status}): ${errorText}`);
+      }
+  
+      setLogs(prev => [...prev, `INFO: Connexion streaming établie avec succès`]);
+  
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let chunkCount = 0;
+  
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          setLogs(prev => [...prev, `INFO: Stream terminé - Total chunks reçus: ${chunkCount}`]);
+          break;
+        }
+        
+        // Décoder le chunk
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // Traiter les lignes complètes (SSE)
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Garder la ligne incomplète
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.substring(6);
+            
+            if (data === '[DONE]') {
+              setCurrentMessages(prev =>
+                prev.map(msg =>
+                  msg.uid === tempResponseId
+                    ? { ...msg, isLoading: false }
+                    : msg
+                )
+              );
+              setLogs(prev => [...prev, `INFO: Signal [DONE] reçu - Streaming terminé`]);
+              break;
+            }
+            
+            if (data.trim()) {
+              chunkCount++;
+              // Ajouter le chunk à la réponse en accumulant le contenu
+              setCurrentMessages(prev =>
+                prev.map(msg =>
+                  msg.uid === tempResponseId
+                    ? { 
+                        ...msg, 
+                        response: (msg.response || '') + data,
+                        // Assurez-vous que isLoading reste true pendant le streaming
+                        isLoading: true
+                      }
+                    : msg
+                )
+              );
+              
+              setLogs(prev => [...prev, `INFO: Chunk ${chunkCount}: '${data}' (length: ${data.length})`]);
+            }
+          }
+        }
+        
+        // Vérifier si on a reçu [DONE] pour sortir de la boucle while
+        if (lines.some(line => line.startsWith('data: [DONE]'))) {
+          break;
+        }
+      }
+  
+      // --- 4. Finalisation ---
+      setLogs(prev => [...prev, `INFO: Rafraîchissement des données de la conversation`]);
+      // Une fois le stream terminé, on rafraîchit les données pour obtenir les vrais UID
+      await fetchConversationData(targetConversation.uid);
       
       const nowISO = new Date().toISOString();
-      setAllConversations(prev => 
-        prev.map(c => c.uid === targetConversation.uid ? {...c, update_at: nowISO} : c)
-            .sort((a, b) => new Date(b.update_at || b.created_at) - new Date(a.update_at || a.created_at))
+      setAllConversations(prev =>
+        prev.map(c => c.uid === targetConversation.uid ? { ...c, update_at: nowISO } : c)
+          .sort((a, b) => new Date(b.update_at || b.created_at) - new Date(a.update_at || a.created_at))
       );
-      if (activeConversation && activeConversation.uid === targetConversation.uid) {
-        setActiveConversation(prev => prev ? {...prev, update_at: nowISO} : null);
-      }
-
+  
+      setLogs(prev => [...prev, `SUCCESS: Message envoyé avec succès`]);
+  
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Erreur lors de l'envoi du message:", error);
+      setLogs(prev => [...prev, `ERROR: ${error.message || "Erreur inconnue lors de l'envoi du message"}`]);
       showSnackbar({ message: `Erreur: ${error.message || "Impossible d'envoyer le message."}`, type: 'error' });
-      setCurrentMessages(prev => prev.filter(msg => msg.uid !== tempPromptId)); 
-      if (createdConversationLocally && targetConversation) { 
+      
+      // Nettoyage en cas d'erreur
+      setCurrentMessages(prev => prev.filter(msg => !msg.uid.startsWith('temp-')));
+      if (createdConversationLocally && targetConversation) {
         setAllConversations(prev => prev.filter(c => c.uid !== targetConversation.uid));
         if (activeConversation?.uid === targetConversation.uid) {
-            setActiveConversation(null);
+          setActiveConversation(null);
         }
       }
     } finally {
       setIsSendingMessage(false);
-      setIsCreatingConversation(false); 
+      setIsCreatingConversation(false);
+      setLogs(prev => [...prev, `INFO: Nettoyage terminé - États réinitialisés`]);
     }
-  }, [activeConversation, user?.uid, showSnackbar, isEditingMessage, isSendingMessage, isCreatingConversation, renamingConvId, handleCancelEdit]);
+  }, [activeConversation, user?.uid, showSnackbar, isSendingMessage, isCreatingConversation, renamingConvId, handleCancelEdit, fetchConversationData]);
   
   const handleDeleteConversation = useCallback(async (conversationUid) => { 
     if (isEditingMessage || renamingConvId) { 
@@ -252,22 +357,126 @@ const App = () => {
       return; 
     } 
     if (isSendingMessage || isCreatingConversation) return; 
+    
     setIsEditingMessage(true); 
+    setLogs([]); // Réinitialise les logs pour l'édition
+    
+    // ✅ CORRECTION : Créer un message temporaire avec isLoading pour déclencher StreamingMarkdown
+    const tempEditedMessage = {
+      uid: uid,
+      prompt: t,
+      response: '', // Commence avec une réponse vide pour le streaming
+      isLoading: true, // ✅ CRITIQUE : Ceci déclenche le mode streaming dans StreamingMarkdown
+      created_at: new Date().toISOString(),
+    };
+    
+    // Remplacer le message existant par la version en cours d'édition
+    setCurrentMessages(prev => prev.map(msg => 
+      msg.uid === uid ? tempEditedMessage : msg
+    ));
+    
     try { 
-      const msgs = await fetchWithAuth(`/api/v1/conversations/${activeConversation.uid}/messages/${uid}/edit`, { 
-        method: 'PUT', 
-        body: JSON.stringify({ new_prompt: t }), 
-      }); 
-      if (Array.isArray(msgs)) setCurrentMessages(msgs); 
-      else await fetchConversationData(activeConversation.uid); 
-      showSnackbar({ message: "Modifié.", type: 'success' }); 
-      handleCancelEdit(); 
+      const token = localStorage.getItem("awesomeLeadsToken");
+      const response = await fetch(
+        `http://localhost:8000/api/v1/conversations/${activeConversation.uid}/messages/${uid}/edit/stream`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ new_prompt: t })
+        }
+      );
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        setLogs(prev => [...prev, `ERROR: Erreur serveur (${response.status}): ${errorText}`]);
+        throw new Error(`Erreur du serveur (${response.status}): ${errorText}`);
+      }
+  
+      setLogs(prev => [...prev, `INFO: Connexion streaming d'édition établie`]);
+  
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let chunkCount = 0;
+  
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          setLogs(prev => [...prev, `INFO: Édition stream terminé - Total chunks reçus: ${chunkCount}`]);
+          break;
+        }
+        
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.substring(6);
+            
+            if (data === '[DONE]') {
+              // ✅ CORRECTION : Marquer comme terminé pour arrêter l'animation de streaming
+              setCurrentMessages(prev =>
+                prev.map(msg =>
+                  msg.uid === uid
+                    ? { ...msg, isLoading: false } // ✅ Arrêter le mode streaming
+                    : msg
+                )
+              );
+              setLogs(prev => [...prev, `INFO: Signal [DONE] reçu - Édition terminée`]);
+              break;
+            }
+            
+            if (data.trim() && !data.startsWith('[ERROR]')) {
+              chunkCount++;
+              // ✅ CORRECTION : Accumuler la réponse tout en gardant isLoading=true
+              setCurrentMessages(prev =>
+                prev.map(msg =>
+                  msg.uid === uid
+                    ? { 
+                        ...msg, 
+                        response: (msg.response || '') + data,
+                        isLoading: true // ✅ Garder le mode streaming actif
+                      }
+                    : msg
+                )
+              );
+              setLogs(prev => [...prev, `INFO: Edit Chunk ${chunkCount}: '${data}' (length: ${data.length})`]);
+            }
+            
+            if (data.startsWith('[ERROR]')) {
+              setLogs(prev => [...prev, `ERROR: ${data}`]);
+              throw new Error(data.substring(7)); // Enlève '[ERROR] '
+            }
+          }
+        }
+        
+        if (lines.some(line => line.startsWith('data: [DONE]'))) {
+          break;
+        }
+      }
+      // Une fois le stream terminé, on rafraîchit les données pour obtenir la version finale et stylisée
+      await fetchConversationData(activeConversation.uid);
+
+      showSnackbar({ message: "Message modifié avec succès.", type: 'success' }); 
+      handleCancelEdit();
+      
     } catch (e) { 
-      showSnackbar({ message: `Erreur: ${e.data?.detail||e.message}`, type: 'error' }); 
+      setLogs(prev => [...prev, `ERROR: ${e.message || "Erreur inconnue lors de l'édition"}`]);
+      showSnackbar({ message: `Erreur: ${e.message}`, type: 'error' });
+      
+      // Restaurer l'état original en cas d'erreur
+      await fetchConversationData(activeConversation.uid);
     } finally { 
       setIsEditingMessage(false); 
+      setLogs(prev => [...prev, `INFO: Nettoyage édition terminé`]);
     }
-  }, [activeConversation?.uid, fetchConversationData, showSnackbar, isEditingMessage, isSendingMessage, isCreatingConversation, handleCancelEdit]);
+  }, [activeConversation?.uid, showSnackbar, isEditingMessage, isSendingMessage, isCreatingConversation, handleCancelEdit, fetchConversationData]);
 
   const handleFileSubmitForContextHub = useCallback(async (files) => {
     if (!activeConversation?.uid) {
@@ -464,9 +673,10 @@ const App = () => {
         {(currentMessages.length === 0 && !isSendingMessage && !isLoadingData) && ( 
           <p className="text-center italic">Envoyez un message pour commencer.</p> 
         )} 
-        {currentMessages.map((msg, index) => ( 
-          <React.Fragment key={msg.uid || `msg-${index}`}> 
-            {msg.prompt && ( 
+        {currentMessages.map((msg, index) => (
+          <React.Fragment key={msg.uid || `msg-${index}`}>
+            {/* PROMPT - reste en texte brut */}
+            {msg.prompt && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }} 
                 animate={{ opacity: 1, y: 0 }} 
@@ -475,7 +685,8 @@ const App = () => {
               > 
                 <div className={`bg-light-surface dark:bg-dark-surfaceContainer p-3 rounded-lg shadow-sm max-w-[85%] ${editingMessageId === msg.uid ? 'w-full border-2 border-light-primary/50 dark:border-dark-primary/50 ring-2 ring-light-primary/30 dark:ring-dark-primary/30' : ''}`}> 
                   {editingMessageId === msg.uid ? ( 
-                    <div className="flex flex-col gap-2"> 
+                    // Votre logique d'édition existante...
+                    <div className="flex flex-col gap-2">
                       <textarea 
                         ref={editInputRef} 
                         value={editText} 
@@ -509,8 +720,13 @@ const App = () => {
                         )} 
                       </div> 
                     </div> 
-                  ) : <p className="text-bodyLarge whitespace-pre-wrap text-light-onSurface dark:text-dark-onSurface">{msg.prompt}</p>} 
+                  ) : (
+                    <p className="text-bodyLarge whitespace-pre-wrap text-light-onSurface dark:text-dark-onSurface">
+                      {msg.prompt}
+                    </p>
+                  )} 
                 </div> 
+                {/* Bouton d'édition existant... */}
                 {editingMessageId !== msg.uid && index === currentMessages.length - 1 && msg.prompt && !msg.isLoading && ( 
                   <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"> 
                     <IconBtn 
@@ -522,31 +738,30 @@ const App = () => {
                     /> 
                   </div> 
                 )} 
-              </motion.div> 
-            )} 
-            {msg.isLoading && msg.uid.startsWith('temp-prompt-') ? ( 
+              </motion.div>
+            )}
+
+            {/* RÉPONSE - utilisez StreamingMarkdown pour TOUS les cas */}
+            {msg.response !== null && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }} 
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ duration: 0.3, delay: 0.1 }} 
-                className="flex items-start justify-end"> 
-                <div className='bg-light-secondaryContainer dark:bg-dark-secondaryContainer p-3 rounded-lg shadow-sm max-w-[85%] flex items-center gap-2'> 
-                  <CircularProgress size="small" classes="text-light-onSecondaryContainer dark:text-dark-onSecondaryContainer"/> 
-                  <span className="text-bodyMedium italic text-light-onSecondaryContainer dark:text-dark-onSecondaryContainer">Génération...</span> 
-                </div> 
-              </motion.div> 
-            ) : msg.response ? ( 
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ duration: 0.3, delay: 0.1 }} 
-                className="flex items-start justify-end"> 
+                className="flex items-start justify-end"
+              > 
                 <div className='bg-light-secondaryContainer dark:bg-dark-secondaryContainer p-3 rounded-lg shadow-sm max-w-[85%]'> 
-                  <p className="text-bodyLarge whitespace-pre-wrap text-light-onSecondaryContainer dark:text-dark-onSecondaryContainer">{msg.response}</p> 
+                  {/* ✅ CORRECTION : StreamingMarkdown gère automatiquement le formatage pendant l'édition aussi */}
+                  <StreamingMarkdown 
+                    content={msg.response || ''} 
+                    isStreaming={msg.isLoading || false}
+                    streamingText={editingMessageId === msg.uid ? 'Modification en cours...' : 'Génération en cours...'}
+                  />
                 </div> 
-              </motion.div> 
-            ) : null} 
-          </React.Fragment> 
+              </motion.div>
+            )}
+
+            
+          </React.Fragment>
         ))} 
         <div ref={messagesEndRef} style={{ height: '1px' }} /> 
       </div> 

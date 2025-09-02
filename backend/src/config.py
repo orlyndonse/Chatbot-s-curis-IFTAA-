@@ -1,13 +1,19 @@
-# source code/backend/src/config.py
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import os # Import os
 
 class Settings(BaseSettings):
+    # Base de données
     DATABASE_URL: str
+    
+    # Authentification JWT
     JWT_SECRET: str
     JWT_ALGORITHM: str
-    REDIS_HOST:str="localhost"
-    REDIS_PORT:int=6379
+    
+    # Redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    
+    # Configuration email
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
     MAIL_FROM: str
@@ -18,22 +24,22 @@ class Settings(BaseSettings):
     MAIL_SSL_TLS: bool = False
     USE_CREDENTIALS: bool = True
     VALIDATE_CERTS: bool = True
+    
+    # URLs et domaine
     DOMAIN: str
     FRONTEND_URL: str = "http://localhost:3000"
+    
+    # API externes
     GEMINI_API_KEY: str
 
-    # --- ADD THIS ---
-    # Define a base directory for uploads. Ensure this directory exists or is created by your app.
-    # Example: 'uploaded_files' in your backend's root directory
+    # Répertoire de stockage des fichiers
     UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploaded_files")
-    # --- END ADDITION ---
-
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+# Instance globale de configuration
 Config = Settings()
 
-# --- ADD THIS: Ensure UPLOAD_DIR exists ---
+# Création du répertoire d'upload s'il n'existe pas
 if not os.path.exists(Config.UPLOAD_DIR):
     os.makedirs(Config.UPLOAD_DIR, exist_ok=True)
-# --- END ADDITION ---

@@ -29,6 +29,7 @@ const ICON_CONFIG = {
   'presentation': '/src/assets/icons/presentation-chart-line.svg',
   'table': '/src/assets/icons/table-cells.svg',
   'arrows-right-left': '/src/assets/icons/arrows-right-left.svg',
+  'cloud_upload': '/src/assets/icons/cloud-arrow-up.svg',
   
   // Icônes pour TopAppBar
   'topic': '/src/assets/icons/squares-2x2.svg',

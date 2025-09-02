@@ -5,33 +5,54 @@ title: Comprendre le Contexte Documentaire du Système
 
 # Comprendre le Contexte Documentaire de l'Assistant RAG Fiqh
 
-L'Assistant RAG Fiqh utilise les documents que vous et d'autres utilisateurs téléversez pour enrichir sa base de connaissances et fournir des réponses informées à vos questions sur le Fiqh Maliki. Il est important de comprendre comment ces documents sont utilisés.
+L'Assistant RAG Fiqh utilise les documents que vous téléversez pour enrichir ses réponses et fournir des informations contextualisées spécifiquement à partir de vos propres ressources documentaires sur le Fiqh Maliki.
 
-## Une Base de Connaissances Partagée
+## Un Contexte Documentaire Privé et Sécurisé
 
-* **Contribution Collective :** Lorsque vous [téléversez des documents](../documents/how-to-upload.md), ils sont ajoutés à une base de connaissances centrale et partagée. Cela signifie que les documents téléversés par tous les utilisateurs contribuent à enrichir les informations que l'IA peut utiliser.
-* **Accès Global aux Informations :** Quand vous posez une question, l'IA peut potentiellement s'appuyer sur des informations provenant de n'importe quel document téléversé dans le système par n'importe quel utilisateur, si ces informations sont jugées pertinentes pour répondre à votre question.
+* **Documents Privés par Conversation :** Chaque conversation dispose de son propre contexte documentaire. Les documents que vous téléversez dans une conversation spécifique ne sont accessibles qu'à cette conversation et à vous seul.
+* **Isolation Complète des Utilisateurs :** L'IA ne peut accéder qu'aux documents que **vous** avez personnellement téléversés dans la conversation active. Elle n'a accès à aucun document d'autres utilisateurs ou d'autres conversations.
+* **Sécurité Renforcée :** Le système vérifie systématiquement que vous êtes bien le propriétaire de la conversation et des documents avant d'y accéder.
 
-    ![Diagramme simple illustrant une base de connaissance globale](/img/screenshot-global-knowledge-base-diagram.png)
-    ## Qu'est-ce que cela signifie pour vos discussions ?
+![Diagramme simple illustrant une base de connaissance globale](/img/rag_context_diagram.svg)
 
-1.  **Réponses Potentiellement Enrichies :** Votre question peut recevoir une réponse qui bénéficie d'informations issues de documents que vous n'avez pas personnellement téléversés, mais qui ont été ajoutés par d'autres utilisateurs et sont pertinents.
-2.  **Pas d'Isolation Stricte des Documents par Conversation ou Utilisateur (Actuellement) :**
-    * Contrairement à un système où les documents seraient strictement limités à une seule de vos discussions, ici, la pertinence par rapport à votre question prime.
-    * Si vous téléversez un document dans une "Discussion A", et qu'un autre utilisateur (ou vous-même dans une "Discussion B") pose une question à laquelle ce document peut répondre, l'IA pourrait l'utiliser.
-3.  **L'Historique de vos Questions/Réponses Reste Privé :**
-    * Il est important de noter que **vos conversations individuelles (la suite de vos questions et des réponses de l'IA) restent associées à votre compte et à cette discussion spécifique**. D'autres utilisateurs ne voient pas vos échanges.
-    * C'est le *contenu informationnel* des documents téléversés qui est partagé au niveau de la base de connaissances de l'IA, pas vos discussions personnelles.
+## Qu'est-ce que cela signifie pour vos discussions ?
 
-## Comment Gérer Vos Téléversements dans ce Contexte ?
+1. **Réponses Basées sur Vos Documents Uniquement :** Quand vous posez une question, l'IA consulte exclusivement :
+   - Les documents que vous avez téléversés dans cette conversation spécifique
+   - Les documents que vous avez marqués comme "actifs" pour cette conversation
+   - L'historique de vos échanges précédents dans cette même conversation
 
-* **Pertinence :** Téléversez des documents qui sont directement liés au Fiqh Maliki et qui peuvent être utiles à une compréhension plus large du sujet.
-* **Confidentialité des Documents :** Étant donné que les informations des documents peuvent potentiellement informer les réponses pour d'autres utilisateurs (même si ce n'est pas direct), **ne téléversez pas de documents contenant des informations personnelles, sensibles ou confidentielles que vous ne souhaiteriez pas voir indirectement utilisées pour répondre à des requêtes générales sur le Fiqh.**
-* **La [Liste des Documents Chargés](../interface-overview/document-management-pane.md#3-liste-des-documents-chargés-documents-chargés-point-341) visible dans votre interface, lorsque vous téléversez, vous montre les fichiers que *vous* avez ajoutés lors de vos sessions et qui ont été soumis au système.**
+2. **Contrôle Granulaire des Sources :**
+   - Vous pouvez activer ou désactiver individuellement chaque document pour le contexte RAG
+   - Seuls les documents marqués comme "actifs" sont utilisés pour générer les réponses
+   - Vous gardez un contrôle total sur quelles informations l'IA peut consulter
 
-**Note Importante sur l'Évolution du Système :**
-*L'architecture actuelle utilise une base de connaissances partagée. Des évolutions futures pourraient introduire des contextes documentaires plus isolés par utilisateur ou par discussion. Cette documentation reflète le fonctionnement actuel.*
+3. **Isolation Stricte des Conversations :**
+   - Les documents téléversés dans "Discussion A" ne sont pas accessibles dans "Discussion B"
+   - Chaque conversation maintient son propre contexte documentaire indépendant
+   - Vos conversations et documents restent complètement privés
+
+4. **Gestion de l'Historique Contextuel :**
+   - L'IA prend en compte l'historique complet de la conversation courante
+   - Les messages précédents dans la même conversation informent les nouvelles réponses
+   - L'historique d'autres conversations n'influence pas les réponses
+
+## Comment Gérer Vos Documents dans ce Contexte ?
+
+* **Téléversement Ciblé :** Téléversez dans chaque conversation les documents spécifiquement pertinents pour les sujets que vous souhaitez aborder.
+* **Activation Sélective :** Utilisez les boutons d'activation/désactivation pour contrôler précisément quels documents l'IA doit consulter pour chaque réponse.
+* **Organisation par Conversation :** Organisez vos documents par thématique en créant des conversations dédiées avec les ressources appropriées.
+* **Confidentialité Assurée :** Vous pouvez téléverser des documents personnels en toute sécurité, sachant qu'ils ne seront jamais accessibles à d'autres utilisateurs.
+
+## Fonctionnalités de Sécurité
+
+* **Vérification d'Appartenance :** Le système vérifie que vous êtes bien le propriétaire de la conversation avant chaque opération.
+* **Isolation des Données :** Aucun croisement de données entre utilisateurs ou entre conversations différentes.
+* **Contrôle d'Accès :** Seuls les documents que vous avez explicitement téléversés et activés sont consultés.
+* **Paths Sécurisés :** Les chemins de fichiers sont validés pour éviter tout accès non autorisé.
+
+La [Liste des Documents Chargés](../interface-overview/document-management-pane.md#3-liste-des-documents-chargés-documents-chargés-point-341) dans votre interface vous montre tous les fichiers que vous avez téléversés dans la conversation courante, avec la possibilité de les activer ou désactiver selon vos besoins.
 
 ---
 
-Maintenant que vous comprenez comment les documents contribuent au système, passons à la section suivante : [Poser des Questions et Obtenir des Réponses](../rag-usage/formulating-questions.md).
+Maintenant que vous comprenez comment le système de contexte documentaire privé fonctionne, passons à la section suivante : [Poser des Questions et Obtenir des Réponses](../rag-usage/formulating-questions.md).

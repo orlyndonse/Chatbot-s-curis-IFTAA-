@@ -52,7 +52,7 @@ const DocumentUploadArea = ({ onFilesAdded, isUploading, supportedFormats = ".pd
         </div>
       ) : (
         <div className="flex flex-col items-center">
-          <Icon name="cloud_upload" size={48} className="text-4xl text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant mb-2" />
+          <Icon name="cloud-arrow-up" size={48} className="text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant mb-2" />
           {isDragActive ? (
             <p className="text-bodyLarge text-light-primary dark:text-dark-primary">Déposez les fichiers ici...</p>
           ) : (

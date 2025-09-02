@@ -3,136 +3,137 @@ import os
 import logging
 from typing import List, Dict, Any, Optional
 from langchain.schema import Document
-# Utiliser les nouveaux imports après installation
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from chromadb import PersistentClient # Pour la persistance
+from chromadb import PersistentClient
 from chromadb.config import Settings
 
-# --- Constantes de Configuration (Pourraient aller dans config.py) ---
-# Mettez le chemin où vous voulez stocker la DB Chroma sur votre serveur
-CHROMA_DB_PATH = os.path.join(os.getcwd(), "chroma_db_fiqh")
-COLLECTION_NAME = "fiqh_maliki"
-EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-# -------------------------------------------------------------------
+# Configuration des constantes pour la base de données vectorielle
+CHROMA_DB_PATH = os.path.join(os.getcwd(), "chroma_db_fiqh") # Chemin de stockage de la base ChromaDB
+COLLECTION_NAME = "fiqh_maliki" # Nom de la collection pour les documents de fiqh maliki
+EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2" # Modèle multilingue pour l'arabe et français
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Variable globale pour le client Chroma (gestion simple, pourrait être améliorée)
-# avec un vrai singleton ou via l'injection de dépendances FastAPI
+# Variables globales pour les instances partagées (pattern singleton simple)
 _chroma_client = None
 _embedding_function = None
 
 def get_embedding_function():
-    """Initialise et retourne le modèle d'embedding."""
+    """
+    Initialise et retourne le modèle d'embedding multilingue.
+    Utilise un pattern singleton pour éviter les réinitialisations multiples.
+    
+    Returns:
+        Instance du modèle HuggingFace pour la génération d'embeddings
+    """
     global _embedding_function
     if _embedding_function is None:
-        # --- AJOUT DEBUG ---
-        print("DEBUG: vectorstore.py - Entrée dans get_embedding_function")
-        # -------------------
         logger.info(f"Initialisation du modèle d'embedding: {EMBEDDING_MODEL_NAME}")
         try:
             _embedding_function = HuggingFaceEmbeddings(
                 model_name=EMBEDDING_MODEL_NAME,
-                # model_kwargs={'device': 'cuda'} # Décommentez si vous avez un GPU et CUDA configuré
+                # model_kwargs={'device': 'cuda'} # Décommentez si GPU disponible
                 # encode_kwargs={'normalize_embeddings': False}
             )
-            # --- AJOUT DEBUG ---
-            print("DEBUG: vectorstore.py - HuggingFaceEmbeddings initialisé")
-            # -------------------
+            logger.info("Modèle d'embedding initialisé avec succès")
         except Exception as e:
             logger.error(f"Erreur lors de l'initialisation du modèle d'embedding: {e}", exc_info=True)
-            # --- AJOUT DEBUG ---
-            print(f"DEBUG: vectorstore.py - ERREUR dans get_embedding_function: {e}")
-            # -------------------
             raise
     return _embedding_function
 
 def get_chroma_client():
-    """Initialise et retourne le client ChromaDB persistant."""
+    """
+    Initialise et retourne le client ChromaDB persistant.
+    Configure la base de données pour la persistance sur disque.
+    
+    Returns:
+        Instance du client ChromaDB persistant
+    """
     global _chroma_client
     if _chroma_client is None:
         logger.info(f"Initialisation du client ChromaDB persistant à : {CHROMA_DB_PATH}")
         try:
-            # S'assure que le dossier parent existe si besoin, bien que os.getcwd() existe toujours
+            # Création du dossier de stockage si nécessaire
             os.makedirs(os.path.dirname(CHROMA_DB_PATH), exist_ok=True)
-            # Initialise le client persistant
-            _chroma_client = PersistentClient(path=CHROMA_DB_PATH, settings=Settings(anonymized_telemetry=False))
-            logger.info("Client ChromaDB initialisé.")
+            
+            # Initialisation du client avec persistance et télémétrie désactivée
+            _chroma_client = PersistentClient(
+                path=CHROMA_DB_PATH, 
+                settings=Settings(anonymized_telemetry=False)
+            )
+            logger.info("Client ChromaDB initialisé avec succès")
         except Exception as e:
             logger.error(f"Erreur lors de l'initialisation du client ChromaDB: {e}", exc_info=True)
-            raise # Relance l'erreur pour arrêter le processus si Chroma ne peut être initialisé
+            raise
     return _chroma_client
 
 def get_vectorstore():
-    """Retourne une instance du wrapper Langchain Chroma."""
-    # --- AJOUT DEBUG ---
-    print("DEBUG: vectorstore.py - Entrée dans get_vectorstore")
-    # -------------------
+    """
+    Retourne une instance du wrapper Langchain pour ChromaDB.
+    Combine le client ChromaDB et le modèle d'embedding dans un wrapper Langchain.
+    
+    Returns:
+        Instance du vectorstore Chroma configuré
+    """
+    # Récupération des instances des composants nécessaires
     _chroma_client_instance = get_chroma_client()
-    # --- AJOUT DEBUG ---
-    print("DEBUG: vectorstore.py - get_chroma_client OK dans get_vectorstore")
-    # -------------------
     _embedding_function_instance = get_embedding_function()
-    # --- AJOUT DEBUG ---
-    print("DEBUG: vectorstore.py - get_embedding_function OK dans get_vectorstore")
-    # -------------------
 
+    # Vérification que les composants sont correctement initialisés
     if _chroma_client_instance is None or _embedding_function_instance is None:
          logger.error("Erreur: Le client ChromaDB ou la fonction d'embedding n'a pas pu être initialisé.")
-         print("DEBUG: vectorstore.py - ERREUR: Client Chroma ou Embedding func est None dans get_vectorstore") # <--- AJOUTER
          raise RuntimeError("Impossible d'initialiser ChromaDB ou l'embedding.")
 
     try:
+        # Création du wrapper Langchain avec les composants initialisés
         vectorstore = Chroma(
             client=_chroma_client_instance,
             collection_name=COLLECTION_NAME,
-            embedding_function=_embedding_function_instance # Passer la fonction chargée
+            embedding_function=_embedding_function_instance
         )
         logger.info("Wrapper VectorStore LangChain Chroma initialisé.")
-        # --- AJOUT DEBUG ---
-        print("DEBUG: vectorstore.py - Chroma wrapper initialisé")
-        # -------------------
         return vectorstore
     except Exception as e:
         logger.error(f"Erreur lors de l'initialisation du wrapper Chroma Langchain: {e}", exc_info=True)
-        print(f"DEBUG: vectorstore.py - ERREUR lors de l'init Chroma wrapper: {e}") # <--- AJOUTER
         raise
 
 def get_filtered_retriever(active_document_uids: List[str], k: int = 7):
     """
-    Creates a retriever that only searches within specified documents.
+    Crée un retriever qui recherche uniquement dans les documents spécifiés.
+    Utilise le filtrage par UID de document pour limiter la recherche.
     
     Args:
-        active_document_uids: List of document UIDs to include in search
-        k: Number of document chunks to retrieve
+        active_document_uids: Liste des identifiants uniques des documents à inclure
+        k: Nombre de fragments de documents à récupérer
     
     Returns:
-        Configured retriever with document filtering
+        Retriever configuré avec filtrage par documents
     """
-    logger.info(f"Creating filtered retriever for {len(active_document_uids)} active documents")
+    logger.info(f"Création d'un retriever filtré pour {len(active_document_uids)} documents actifs")
     
     vectorstore = get_vectorstore()
     
+    # Gestion du cas où aucun document n'est spécifié
     if not active_document_uids:
-        logger.warning("No active documents provided - creating empty retriever")
+        logger.warning("Aucun document actif fourni - création d'un retriever vide")
         return vectorstore.as_retriever(
             search_kwargs={
                 "k": k,
-                "filter": {"document_uid": {"$in": ["invalid_id_placeholder"]}}  # Will match nothing
+                "filter": {"document_uid": {"$in": ["invalid_id_placeholder"]}}  # Ne correspondra à rien
             }
         )
     
-    # Create filter for ChromaDB
+    # Création du filtre pour ChromaDB utilisant les UIDs spécifiés
     filter_criteria = {"document_uid": {"$in": active_document_uids}}
-    logger.debug(f"Filter criteria: {filter_criteria}")
+    logger.debug(f"Critères de filtre: {filter_criteria}")
     
     return vectorstore.as_retriever(
         search_kwargs={
             "k": k,
             "filter": filter_criteria,
-            # Optional: Add score threshold if needed
+            # Option : Ajouter un seuil de score si nécessaire
             # "score_threshold": 0.7
         }
     )
@@ -140,79 +141,39 @@ def get_filtered_retriever(active_document_uids: List[str], k: int = 7):
 def add_documents_to_vectorstore(documents: List[Document], document_uid: str = None):
     """
     Ajoute une liste de documents (découpés) au Vector Store ChromaDB.
-    MODIFIÉ: Ajoute le document_uid dans les métadonnées pour le filtrage.
+    Enrichit les métadonnées avec l'UID du document pour permettre le filtrage.
+    
+    Args:
+        documents: Liste des fragments de documents à ajouter
+        document_uid: Identifiant unique du document source (pour le filtrage)
     """
-    # --- AJOUT DEBUG ---
-    print("DEBUG: vectorstore.py - Entrée dans add_documents_to_vectorstore")
-    # -------------------
     if not documents:
         logger.warning("Aucun document à ajouter au vectorstore.")
-        print("DEBUG: vectorstore.py - Aucun document reçu dans add_documents_to_vectorstore") # <--- AJOUTER
         return
 
-    # --- AJOUT DEBUG ---
-    print("DEBUG: vectorstore.py - Appel de get_vectorstore...")
-    # -------------------
     try:
-        vectorstore = get_vectorstore() # Récupère le wrapper Langchain
-        # --- AJOUT DEBUG ---
-        print("DEBUG: vectorstore.py - get_vectorstore terminé avec succès.")
-        # -------------------
-    except Exception as e:
-         logger.error(f"Erreur lors de la récupération du vectorstore: {e}", exc_info=True)
-         print(f"DEBUG: vectorstore.py - ERREUR dans get_vectorstore : {e}") # <--- AJOUTER
-         raise # Arrête si on ne peut pas obtenir le vectorstore
+        # Récupération du vectorstore configuré
+        vectorstore = get_vectorstore()
+        logger.info(f"Ajout de {len(documents)} fragments de documents à la collection '{COLLECTION_NAME}'...")
 
-    # --- AJOUT DEBUG ---
-    # Cette revérification est redondante si get_vectorstore a réussi, mais ajoutons un print
-    print("DEBUG: vectorstore.py - Appel de get_embedding_function (vérification)...")
-    # -------------------
-    try:
-        embedding_function = get_embedding_function() # S'assure que le modèle est chargé
-         # --- AJOUT DEBUG ---
-        print("DEBUG: vectorstore.py - get_embedding_function (vérification) terminé.")
-        # -------------------
-    except Exception as e:
-         logger.error(f"Erreur lors de la récupération de embedding_function: {e}", exc_info=True)
-         print(f"DEBUG: vectorstore.py - ERREUR dans get_embedding_function (vérification) : {e}") # <--- AJOUTER
-         raise # Arrête si on ne peut pas obtenir l'embedding function
-
-    logger.info(f"Ajout de {len(documents)} morceaux de documents à la collection '{COLLECTION_NAME}'...")
-    # --- AJOUT DEBUG ---
-    print(f"DEBUG: vectorstore.py - Prêt à ajouter {len(documents)} morceaux...")
-    # -------------------
-
-    try:
-        # --- AJOUT DEBUG ---
-        print("DEBUG: vectorstore.py - Génération des IDs...")
-        # -------------------
-        
-        # MODIFICATION IMPORTANTE: Enrichir les métadonnées
+        # Enrichissement des métadonnées pour le filtrage par document
         for i, doc in enumerate(documents):
             if document_uid:
-                # Ajouter l'UID du document dans les métadonnées
                 if not doc.metadata:
                     doc.metadata = {}
+                # Ajout de l'UID du document dans les métadonnées pour le filtrage
                 doc.metadata['document_uid'] = document_uid
-                logger.debug(f"Document chunk {i}: ajout document_uid={document_uid} dans metadata")
+                logger.debug(f"Fragment {i}: ajout document_uid={document_uid} dans les métadonnées")
         
-        # Générer des IDs uniques pour chaque morceau
+        # Génération d'identifiants uniques pour chaque fragment
         ids = [f"{doc.metadata.get('document_uid', 'unknown')}_{i}" for i, doc in enumerate(documents)]
-        # --- AJOUT DEBUG ---
-        print(f"DEBUG: vectorstore.py - IDs générés (exemple premier ID: {ids[0] if ids else 'N/A'})")
-        print("DEBUG: vectorstore.py - Appel de vectorstore.add_documents...")
-        # -------------------
-
-        # Utiliser add_documents qui gère l'embedding en interne
-        vectorstore.add_documents(documents=documents, ids=ids) # embedding_function est déjà dans l'objet vectorstore
-        # --- AJOUT DEBUG ---
-        print("DEBUG: vectorstore.py - vectorstore.add_documents terminé.")
-        # -------------------
+        
+        # Ajout des documents au vectorstore (l'embedding est géré automatiquement)
+        vectorstore.add_documents(documents=documents, ids=ids)
+        
+        # Information sur le nombre total d'éléments dans la collection
         logger.info(f"Ajout terminé. La collection contient maintenant {vectorstore._collection.count()} éléments.")
 
     except Exception as e:
-        # --- AJOUT DEBUG ---
-        print(f"DEBUG: vectorstore.py - ERREUR lors de l'ajout: {e}")
-        # -------------------
         logger.error(f"Erreur lors de l'ajout des documents au vectorstore: {e}", exc_info=True)
-        raise # Relancer l'exception pour que indexer_rag.py la capture
+        raise

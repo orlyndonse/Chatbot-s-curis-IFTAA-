@@ -5,71 +5,83 @@ title: Vue d'Ensemble des Tests
 
 # Vue d'Ensemble des Tests
 
-Les tests sont un aspect essentiel du développement logiciel pour garantir la qualité, la fiabilité et la maintenabilité de l'application Assistant RAG Fiqh. Le backend du projet inclut une structure de tests unitaires et potentiellement d'intégration utilisant Pytest.
+Les tests sont un aspect essentiel du développement logiciel pour garantir la qualité, la fiabilité et la maintenabilité de l'application Assistant RAG Fiqh. Le backend du projet inclut une suite de tests robuste utilisant **Pytest** pour les tests unitaires et d'intégration.
+
+---
 
 ## Objectifs des Tests
 
 * **Vérifier la fonctionnalité** : S'assurer que chaque composant (fonctions, classes, endpoints API) se comporte comme attendu.
 * **Prévenir les régressions** : Détecter si des modifications récentes ont introduit des bugs dans des fonctionnalités existantes.
 * **Faciliter le refactoring** : Donner confiance lors de la modification ou de l'amélioration du code, en sachant que les tests peuvent signaler des problèmes.
-* **Documenter le code** : Les tests servent aussi d'exemples d'utilisation des différents modules.
-
-## Structure des Tests
-
-Les tests pour le backend sont situés dans le dossier `Code_Source/backend/src/tests/`.
-
-* **`conftest.py`**:
-    * Ce fichier est utilisé par Pytest pour définir des fixtures, des hooks et des plugins partagés entre plusieurs fichiers de test.
-    * Dans ce projet, il est utilisé pour :
-        * **Mocker les dépendances** :
-            * `get_session`: La dépendance FastAPI pour obtenir une session de base de données est remplacée par un mock (`mock_session`), évitant ainsi de réelles interactions avec la base de données pendant la plupart des tests unitaires.
-            * `AccessTokenBearer`, `RefreshTokenBearer`, `RoleChecker`: Les dépendances de sécurité sont également mockées pour isoler la logique des endpoints de la validation réelle des tokens ou des rôles lors des tests.
-        * **Fournir des fixtures réutilisables** :
-            * `fake_session`: Retourne l'instance `mock_session`.
-            * `fake_user_service`: Fournit une instance mockée du `UserService`.
-            * `fake_question_service`: Fournit une instance mockée d'un `QuestionService` (ce nom pourrait correspondre à une version antérieure du `ConversationService` ou être un service non encore entièrement migré).
-            * `test_client`: Fournit une instance de `TestClient` de FastAPI, permettant de faire des requêtes HTTP aux endpoints de l'application dans un contexte de test.
-            * `test_question`: Fournit un exemple d'objet `Question` (potentiellement un ancien modèle de données ou un exemple pour les tests).
-    * `app.dependency_overrides`: Permet de remplacer les dépendances réelles par leurs mocks au niveau de l'application FastAPI pour l'environnement de test.
-
-* **`test_auth.py`**:
-    * Contient les tests pour le module d'authentification (`src/auth/`).
-    * Exemple de test : `test_user_creation` vérifie que lors de l'appel à l'endpoint `/signup` :
-        * `fake_user_service.user_exists` est appelé correctement.
-        * `fake_user_service.create_user` est appelé avec les bonnes données si l'utilisateur n'existe pas.
-    * Les tests utilisent le `test_client` pour simuler des requêtes HTTP et les mocks (`fake_user_service`, `fake_session`) pour vérifier les interactions avec les services et la base de données sans les exécuter réellement.
-
-* **`test_question.py`**:
-    * Ce fichier semble contenir des tests pour une entité "Question" qui pourrait être un ancien nom ou un composant lié aux conversations/messages.
-    * Les tests (`test_get_all_questions`, `test_create_question`, `test_get_question_by_uid`, `test_update_question_by_uid`) suivent un schéma similaire :
-        * Utilisation du `test_client` pour appeler des endpoints (par exemple, `/api/v1/questions`).
-        * Assertion que les méthodes du service mocké (`fake_question_service`) sont appelées comme prévu avec les bons arguments.
-
-## Comment Lancer les Tests
-
-Les tests sont généralement exécutés avec Pytest.
-
-1.  Assurez-vous d'être dans l'environnement virtuel du backend où Pytest et les autres dépendances sont installés.
-2.  Naviguez à la racine du dossier `Code_Source/backend/`.
-3.  Exécutez la commande Pytest :
-    ```bash
-    pytest
-    ```
-    Ou, pour plus de détails :
-    ```bash
-    pytest -v
-    ```
-    Pytest découvrira et exécutera automatiquement les fichiers de test (nommés `test_*.py` ou `*_test.py`) et les fonctions de test (nommées `test_*`).
-
-## Stratégie de Test Actuelle
-
-D'après les fichiers fournis, la stratégie de test actuelle se concentre sur :
-* **Tests d'intégration au niveau des API endpoints** : En utilisant `TestClient` pour s'assurer que les routes sont correctement configurées et appellent les services appropriés.
-* **Mocking des dépendances externes** : Les services (comme `UserService`) et les sessions de base de données sont mockés pour isoler les tests de la logique des endpoints eux-mêmes et éviter la dépendance à une base de données réelle ou à des services externes pendant les tests unitaires/d'intégration des routes.
-* **Vérification des appels de méthodes (Mock Assertions)** : Les tests vérifient que les méthodes des services mockés sont appelées une fois et avec les bons arguments.
-
-Cette approche est efficace pour tester la couche API et s'assurer que la plomberie entre les routes, les services et les dépendances fonctionne comme prévu. Pour une couverture plus complète, des tests unitaires plus granulaires pour la logique métier au sein des services eux-mêmes (sans mocker la base de données, mais en utilisant une base de données de test par exemple) pourraient être ajoutés.
+* **Documenter le code** : Les tests servent aussi d'exemples concrets d'utilisation des différents modules.
 
 ---
 
-Après avoir exploré les tests, nous aborderons la [Documentation Utilisateur](./../user-documentation/overview.md) et comment elle est structurée.
+## Structure des Tests
+
+Les tests pour le backend sont situés dans le dossier `Code_Source/backend/tests/`.
+
+### `conftest.py`
+
+Ce fichier est le centre de configuration pour Pytest. Il permet de définir des "fixtures" (des morceaux de code réutilisables pour les tests).
+
+* **Mocker les dépendances** : Le rôle principal de ce fichier est de remplacer les dépendances réelles par des "mocks" (des doublures) pour isoler nos tests.
+    * `get_session`: La connexion à la base de données est remplacée par un mock asynchrone (`AsyncMock`).
+    * `get_user_service`: La dépendance qui fournit le `UserService` est remplacée pour nous permettre d'injecter un faux service (`fake_user_service`). C'est la clé pour tester la logique des routes sans dépendre du vrai service.
+    * `get_current_user`: La dépendance de sécurité est remplacée par une fonction qui retourne un faux utilisateur, nous évitant de devoir gérer de vrais tokens JWT dans les tests.
+
+* **Fournir des fixtures réutilisables** :
+    * `fake_session`: Fournit le mock de session pour les tests.
+    * `fake_user_service`: Fournit le mock du service utilisateur.
+    * `test_client`: Fournit une instance de `TestClient`, un outil essentiel pour simuler des requêtes HTTP vers notre application FastAPI.
+
+### `test_auth.py`
+
+Ce fichier contient les tests pour le module d'authentification (`src/auth/`). Il se concentre sur les tests d'intégration des endpoints.
+* Il utilise le `test_client` pour simuler des appels API (ex: `POST /api/v1/auth/signup`).
+* Il suit le pattern **Arrange, Act, Assert** :
+    1.  **Arrange** : On prépare les mocks (ex: `fake_user_service.user_exists.return_value = False`).
+    2.  **Act** : On exécute la requête HTTP.
+    3.  **Assert** : On vérifie que le code de statut est correct et que les méthodes de nos mocks ont été appelées comme prévu.
+
+### `test_auth_utils.py`
+
+Ce fichier est un exemple de **tests unitaires purs**.
+* Il teste les fonctions utilitaires du module d'authentification (`src/auth/utils.py`) de manière totalement isolée.
+* Par exemple, il vérifie que la fonction `generate_passwd_hash` et `verify_password` fonctionnent correctement sans avoir besoin de mocks, de l'application FastAPI ou d'une base de données.
+
+### `test_rag_utils.py`
+
+Similaire à `test_auth_utils.py`, ce fichier contient des tests unitaires pour les fonctions utilitaires du module RAG (`src/rag/utils.py`).
+* Il vérifie le bon fonctionnement de fonctions comme `pretraiter_texte_arabe`, s'assurant que la logique de bas niveau est fiable.
+
+---
+
+## Comment Lancer les Tests
+
+1.  Activez votre environnement virtuel : `source env/bin/activate` (ou `env\Scripts\activate` sur Windows).
+2.  Naviguez à la racine du dossier `Code_Source/backend/`.
+3.  Exécutez la commande Pytest :
+    ```bash
+    pytest -v
+    ```
+    Pytest découvrira et exécutera automatiquement tous les tests.
+
+---
+
+## Stratégie de Test Actuelle
+
+La stratégie de test se concentre sur deux axes principaux pour une couverture efficace :
+
+1.  **Tests d'intégration des Endpoints API** : En utilisant `TestClient`, nous nous assurons que les routes sont bien configurées, que les données sont validées et que les services appropriés sont appelés. C'est le test le plus proche d'une utilisation réelle.
+
+2.  **Tests unitaires des fonctions utilitaires** : En testant les fonctions "pures" (qui ne dépendent pas de FastAPI ou de la base de données) de manière isolée, nous garantissons que les briques fondamentales de notre logique métier sont correctes et fiables.
+
+Cette double approche permet de tester à la fois la "plomberie" de l'application (les routes et les dépendances) et la logique métier de base, offrant une bonne confiance dans la qualité du code.
+
+Pour une couverture encore plus complète, des tests pourraient être ajoutés pour le module `conversations`, en suivant le même modèle que pour `test_auth.py`.
+
+---
+
+Maintenant, explorons en détail comment tester les endpoints d'authentification dans la section [Focus - Tester l'Authentification](./auth-tests).

@@ -15,7 +15,7 @@ Lorsque vous avez terminé d'utiliser l'Assistant RAG Fiqh, il est recommandé d
     ![Avatar utilisateur dans la barre supérieure](/img/screenshot-topbar-user-menu.png)
     3.  Dans ce menu déroulant, cliquez sur l'option "**Se déconnecter**" (Logout).
 
-    ![Option "Se déconnecter" dans le menu utilisateur](/img/screenshot-topbar-right-section.png)
+    ![Option "Se déconnecter" dans le menu utilisateur](/img/placeholder-topbar-user-menu.png)
     ## Que se passe-t-il après la déconnexion ?
 
 * **Session Terminée :** Votre session active sur l'Assistant RAG Fiqh sera immédiatement terminée.

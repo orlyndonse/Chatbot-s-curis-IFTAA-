@@ -1,5 +1,3 @@
-# src/auth/schemas.py
-
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -8,6 +6,7 @@ from pydantic import BaseModel, Field, ConfigDict
 # Assurez-vous que le chemin est correct pour ConversationModel
 from src.conversations.schemas import ConversationModel
 
+# Modèle pour la création d'un utilisateur (inscription)
 class UserCreateModel(BaseModel):
     first_name: str = Field(max_length=25)
     last_name: str = Field(max_length=25)
@@ -27,6 +26,7 @@ class UserCreateModel(BaseModel):
         }
     }
 
+# Modèle de base pour représenter un utilisateur
 class UserModel(BaseModel):
     uid: uuid.UUID
     username: str
@@ -34,41 +34,47 @@ class UserModel(BaseModel):
     first_name: str
     last_name: str
     is_verified: bool
-    password_hash: str = Field(exclude=True)
+    password_hash: str = Field(exclude=True)  # Exclut le hash du mot de passe des réponses
     created_at: datetime
     update_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
+# Modèle étendu avec les conversations de l'utilisateur
 class UserDetailModel(UserModel):
     conversations: List[ConversationModel] = []
 
+# Modèle pour la connexion d'un utilisateur
 class UserLoginModel(BaseModel):
     email: str = Field(max_length=40)
     password: str = Field(min_length=6)
 
+# Modèle pour une liste d'adresses email
 class EmailModel(BaseModel):
     addresses : List[str]
 
+# Modèle pour une seule adresse email
 class SingleEmailModel(BaseModel):
     email: str
 
+# Modèle pour la demande de réinitialisation de mot de passe
 class PasswordResetRequestModel(BaseModel):
     email: str
 
+# Modèle pour la confirmation de réinitialisation de mot de passe
 class PasswordResetConfirmModel(BaseModel):
     # Utilisé par /password-reset-confirm
-    token: str # Le token est inclus ici
+    token: str  # Le token est inclus ici
     new_password: str
     confirm_new_password: str
 
-# --- Ré-ajout de VerifyTokenModel ---
+# Modèle pour la vérification d'email avec token
 class VerifyTokenModel(BaseModel):
     # Utilisé par POST /verify-email pour recevoir le token dans le corps
     token: str
-# --- Fin Ré-ajout ---
 
+# Modèle de réponse pour la validation de token
 class TokenValidationResponse(BaseModel):
     valid: bool
-    email: Optional[str] = None
-    detail: Optional[str] = None
+    email: Optional[str] = None  # Email associé au token si valide
+    detail: Optional[str] = None  # Message détaillé en cas d'erreur

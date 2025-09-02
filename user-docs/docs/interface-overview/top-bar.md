@@ -7,7 +7,7 @@ title: La Barre Supérieure (Top Bar)
 
 La barre supérieure (Top Bar), située tout en haut de l'interface de l'Assistant RAG Fiqh, contient des éléments de navigation importants, des options de personnalisation de l'affichage, et l'accès aux fonctionnalités de votre compte.
 
-![Vue générale de la Barre Supérieure avec nouveaux éléments](/img/screenshot-topbar-new-overview.png)
+![Vue générale de la Barre Supérieure](/img/screenshot-topbar-new-overview.png)
 
 ## Éléments de la Barre Supérieure
 
@@ -19,44 +19,58 @@ Ces éléments sont principalement visibles sur les écrans plus petits (smartph
 
 * **Icône Menu :**
     * **Affichage :** Représentée par une icône `menu` (☰).
-    * **Visibilité :** Apparaît sur les écrans de petite et moyenne taille.
+    * **Visibilité :** Apparaît uniquement sur les écrans de petite et moyenne taille (`lg:hidden`).
     * **Fonction :** Cliquer sur cette icône permet d'afficher ou de masquer la [Barre Latérale (Sidebar)](./sidebar.md), qui contient votre historique de conversations et le bouton "Nouvelle Discussion".
 
-    ![Icône Menu et Logo sur mobile/tablette](/img/screenshot-topbar-mobile-left-section.png)
 * **Logo de l'Application :**
     * **Affichage :** Le logo de l'application est affiché à côté de l'icône Menu.
     * **Visibilité :** Également caché sur les grands écrans (`lg:hidden`).
-    * **Fonction :** Cliquer sur le logo vous redirige vers la page d'accueil de l'application (chemin "/").
+    * **Fonction :** Élément visuel représentant l'identité de l'application.
 
+    ![Section gauche mobile avec icône menu et logo](/img/screenshot-topbar-mobile-left-section.png)
 
 ### 2. Section Droite (Actions et Compte)
 
 Ces éléments sont généralement visibles sur toutes les tailles d'écran et regroupent plusieurs fonctionnalités.
-
-* **Bouton de Thème (Clair/Sombre) :**
-    * **Icône :** L'icône change dynamiquement pour refléter le passage au mode opposé : `dark_mode` (passer au mode sombre) si le thème actuel est clair, ou `light_mode` (passer au mode clair) si le thème actuel est sombre.
-    * **Titre/Infobulle :** Indique l'action (par exemple, "Switch to dark mode" ou "Switch to light mode").
-    * **Fonction :** Permet de basculer l'apparence de l'application entre un thème clair et un thème sombre. Votre préférence est sauvegardée dans le `localStorage` de votre navigateur.
-
-    ![Icône Thème](/img/screenshot-topbar-Theme.png)
 
 * **Bouton d'accès au Panneau de Contexte (Context Hub) :**
     * **Icône :** Représenté par l'icône `topic`.
     * **Titre/Infobulle :** "Toggle Context Hub".
     * **Fonction :** Ouvre ou ferme le panneau latéral droit appelé "Context Hub". Ce panneau vous permet de [gérer les documents](./document-management-pane.md) (téléverser, voir la liste, etc.) qui fournissent le contexte à l'IA pour la conversation active.
 
-
-    ![Icône Contexte](/img/screenshot-topbar-Contexte.png)
+    ![Bouton Context Hub](/img/screenshot-topbar-Contexte.png)
 
 * **Menu Utilisateur (Avatar) :**
     * **Affichage :** Votre avatar utilisateur est affiché. Il est généré à partir de votre nom d'utilisateur (`user?.username`) ou de votre prénom (`user?.first_name`).
-    * **Fonction :** Cliquer sur votre avatar ouvre un petit menu déroulant.
-    * **Menu Déroulant :**
-        * **Option "Se déconnecter" (Logout) :**
-            * **Accès :** Unique option dans le menu déroulant actuel.
-            * **Fonction :** Cliquer sur "**Se déconnecter**" mettra fin à votre session. Les tokens d'authentification sont retirés du `localStorage`, et vous êtes redirigé vers la page de connexion (`/login`).
+    * **Fonction :** Cliquer sur votre avatar ouvre un menu déroulant avec plusieurs options.
 
-    ![Boutons d'action et menu utilisateur](/img/screenshot-topbar-right-section.png)
+    ![Avatar utilisateur](/img/screenshot-topbar-user-menu.png)
+
+    **Menu Déroulant :**
+    
+    Le menu utilisateur contient les options suivantes :
+
+    * **Langue (Language) :**
+        * **Icône :** `language`
+        * **Fonction :** Permet de basculer entre les langues disponibles dans l'application.
+        
+    * **Thème (Theme) :**
+        * **Icône :** L'icône change dynamiquement - `dark_mode` pour passer au mode sombre si le thème actuel est clair, ou `light_mode` pour passer au mode clair si le thème actuel est sombre.
+        * **Fonction :** Permet de basculer l'apparence de l'application entre un thème clair et un thème sombre. Votre préférence est sauvegardée dans le `localStorage` de votre navigateur.
+        
+    * **Documentation :**
+        * **Icône :** `help_outline`
+        * **Fonction :** Ouvre la documentation de l'application dans un nouvel onglet (localhost:3001/my-docs/).
+        
+    * **Se déconnecter (Logout) :**
+        * **Icône :** `logout`
+        * **Fonction :** Met fin à votre session. Les tokens d'authentification sont retirés du `localStorage`, et vous êtes redirigé vers la page de connexion (`/login`).
+
+    ![Menu utilisateur déroulant](/img/placeholder-topbar-user-menu.png)
+
+### 3. Gestion des Clics Extérieurs
+
+Le menu utilisateur se ferme automatiquement lorsque vous cliquez en dehors de celui-ci, offrant une expérience utilisateur fluide et intuitive.
 
 ---
 

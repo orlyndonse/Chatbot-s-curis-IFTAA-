@@ -18,16 +18,19 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import router from './routers/routes' // Configuration des routes
 import { UserProvider } from './contexts/UserContext' // Contexte utilisateur
-import { SnackbarProvider } from './contexts/SnackbarContext' // Contexte Snackbar
+import { SnackbarProvider } from './contexts/SnackBarContext' // Contexte Snackbar
+import { LanguageProvider } from './contexts/LanguageContext' // Contexte de langue
 
 import './index.css' // Styles globaux
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <UserProvider>
-      <SnackbarProvider>
-        <RouterProvider router={router} />
-      </SnackbarProvider>
+      <LanguageProvider>
+        <SnackbarProvider>
+          <RouterProvider router={router} />
+        </SnackbarProvider>
+      </LanguageProvider>
     </UserProvider>
   </React.StrictMode>,
 )
@@ -46,12 +49,18 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 - Gère les informations de l'utilisateur connecté, les tokens d'authentification
 - Fournit les fonctions associées (login, logout) aux composants enfants
 
-### 3. `SnackbarProvider`
-- Provient de `src/contexts/SnackbarContext.jsx`
+### 3. `LanguageProvider`
+- Provient de `src/contexts/LanguageContext.jsx`
+- Ce fournisseur de contexte gère la langue actuelle de l'interface utilisateur (français/arabe)
+- Contrôle la direction du texte (LTR/RTL) pour l'affichage
+- Fournit les fonctions de traduction aux composants enfants
+
+### 4. `SnackbarProvider`
+- Provient de `src/contexts/SnackBarContext.jsx`
 - Ce fournisseur de contexte gère l'état et la logique pour afficher des notifications (snackbars) à l'utilisateur à travers l'application
 - Permet un système de notification centralisé et cohérent
 
-### 4. `RouterProvider`
+### 5. `RouterProvider`
 - Importé de `react-router-dom`
 - C'est le composant qui active la logique de routage définie dans le fichier `src/routers/routes.jsx`
 - Il prend en prop `router` l'instance du routeur configuré
@@ -74,12 +83,14 @@ La hiérarchie des fournisseurs est importante :
 ```
 React.StrictMode
 └── UserProvider (gestion de l'authentification)
-    └── SnackbarProvider (système de notifications)
-        └── RouterProvider (routage de l'application)
+    └── LanguageProvider (gestion de la langue et des traductions)
+        └── SnackbarProvider (système de notifications)
+            └── RouterProvider (routage de l'application)
 ```
 
 Cette structure garantit que :
 - Les informations utilisateur sont disponibles partout dans l'application
+- La gestion de la langue est accessible à tous les composants
 - Le système de notifications peut être utilisé depuis n'importe quel composant
 - Le routage fonctionne avec accès aux contextes parent
 
@@ -89,7 +100,7 @@ Ce fichier `main.jsx` est donc fondamental car il orchestre le démarrage de l'a
 
 - Configurant le routage de l'application
 - Mettant en place les fournisseurs de contexte nécessaires pour la gestion de l'état global
-- Initialisant les fonctionnalités transversales (authentification, notifications)
+- Initialisant les fonctionnalités transversales (authentification, internationalisation, notifications)
 - Attachant l'application React au DOM HTML
 
 Il constitue le point de départ de toute l'architecture de l'application frontend.

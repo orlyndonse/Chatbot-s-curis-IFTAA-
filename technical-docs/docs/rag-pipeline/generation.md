@@ -25,8 +25,8 @@ Lorsqu'un utilisateur envoie un prompt via l'endpoint POST `/conversations/{conv
 
 3.  **Fonctionnement Interne de `ConversationalRetrievalChain`**:
     * **a. Condensation de la Question (Question Condensing)**:
-        * La chaîne utilise d'abord un LLM (distinct ou le même LLM principal, selon la configuration de Langchain) pour "condenser" la question actuelle de l'utilisateur et l'historique du chat en une question unique et autonome. Cette nouvelle question est formulée de manière à pouvoir être comprise sans le contexte de l'historique précédent.
-        * Par exemple, si l'historique est : `Utilisateur: "Qu'est-ce que le Zakat?"`, `IA: "C'est..."`, et que la nouvelle question est `Utilisateur: "Et quelles sont ses conditions ?"`, la question condensée pourrait devenir quelque chose comme : `"Quelles sont les conditions du Zakat ?"`.
+        * La chaîne gère automatiquement et implicitement la condensation de la question actuelle de l'utilisateur et de l'historique du chat en une question unique et autonome via LangChain. Cela permet de formuler une requête compréhensible sans le contexte complet de l'historique précédent.
+        * Par exemple, si l'historique est : `Utilisateur: "Qu'est-ce que le Zakat?"`, `IA: "C'est..."`, et que la nouvelle question est `Utilisateur: "Et quelles sont ses conditions ?"`, la question condensée pourrait devenir quelque chose comme : `"Quelles sont les conditions du Zakat ?"` (cette étape est intégrée dans le comportement par défaut de `ConversationalRetrievalChain`).
     * **b. Récupération des Documents (Retrieval)**:
         * La question condensée est ensuite passée au `retriever` configuré dans la chaîne (qui est une instance de `Chroma` agissant comme retriever, provenant de `src/rag/vectorstore.py`).
         * Le `retriever` effectue une recherche de similarité sémantique dans la base de données vectorielle (ChromaDB) pour trouver les segments de documents (chunks) les plus pertinents par rapport à la question condensée. Le nombre de documents retournés est défini par `search_kwargs={"k": 7}`.

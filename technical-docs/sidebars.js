@@ -172,7 +172,11 @@ const sidebars = {
         description: "Informations sur la stratégie de test et l'exécution des tests.",
         slug: '/tests',
       },
-      items: ['tests/overview'],
+      items: [
+        'tests/overview',
+        'tests/auth-tests',
+        'tests/utils-tests',
+      ],
     },
     {
       type: 'category',
