@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-// Assurez-vous d'importer votre composant CircularProgress
-import { CircularProgress } from './Progress'; // Adaptez le chemin si nécessaire
+import { CircularProgress } from './Progress';
 
 const StreamingMarkdown = ({ content, isStreaming = false, streamingText = "Génération..." }) => {
   const [displayContent, setDisplayContent] = useState('');

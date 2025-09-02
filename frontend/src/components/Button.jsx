@@ -5,7 +5,7 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import Icon from "./Icon"; // Import du composant Icon
+import Icon from "./Icon";
 
 const Button = ({
     classes = '',
@@ -64,9 +64,6 @@ IconBtn.propTypes = {
     children: PropTypes.any,
 };
 
-/**
-* Extended fab - Mis à jour avec icônes locales
-*/
 const ExtendedFab = ({ href, text, classes = '', ... rest }) => {
     if (href) {
         return (

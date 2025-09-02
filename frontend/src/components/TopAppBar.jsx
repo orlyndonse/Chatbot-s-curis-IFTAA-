@@ -1,4 +1,3 @@
-// TopAppBar.jsx - Mis à jour avec icônes locales
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
@@ -7,7 +6,7 @@ import Avatar from "./Avatar";
 import Menu from "./Menu";
 import MenuItem from "./MenuItem";
 import Logo from "./Logo";
-import Icon from "./Icon"; // Import du composant Icon
+import Icon from "./Icon";
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../utils/translations';
 
@@ -20,7 +19,7 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
   const { language, toggleLanguage } = useLanguage();
   const t = translations[language];
 
-  // Theme Toggle State and Logic
+  // État et Logique du Toggle de Thème
   const [theme, setTheme] = useState(() => {
     const savedTheme = localStorage.getItem('theme');
     return savedTheme || 'dark';
@@ -96,7 +95,7 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
 
   return (
     <header className='relative flex justify-between items-center h-16 px-4'>
-      {/* Left section: Sidebar toggle and Logo for mobile */}
+      {/* Section gauche : Bouton de sidebar et logo pour mobile */}
       <div className='flex items-center gap-1'>
         <IconBtn
           icon='menu'
@@ -108,9 +107,9 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
         <Logo classes='lg:hidden'/>
       </div>
 
-      {/* Right section: Context Hub Toggle and User Menu */}
+      {/* Section droite : Bouton Context Hub et Menu Utilisateur */}
       <div className="flex items-center gap-2">
-        {/* Button to toggle Context Hub Panel */}
+        {/* Bouton pour activer/désactiver le panneau Context Hub */}
         <IconBtn
           icon="topic"
           title="Toggle Context Hub"
@@ -129,28 +128,28 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
           <div ref={userMenuRef}>
             <Menu classes={`${showUserMenu ? 'active' : ''} z-30`}>
               
-              {/* Menu Item: Language */}
+              {/* Élément de menu : Langue */}
               <MenuItem
                 icon='language'
                 labelText={t.language}
                 onClick={handleLanguageChange}
               />
             
-              {/* Menu Item: Theme */}
+              {/* Élément de menu : Thème */}
               <MenuItem
                 icon={theme === 'light' ? 'dark_mode' : 'light_mode'}
                 labelText={t.toggleTheme(theme)}
                 onClick={handleThemeToggle}
               />
 
-              {/* Menu Item: Documentation */}
+              {/* Élément de menu : Documentation */}
               <MenuItem
                 icon='help_outline'
                 labelText={t.documentation}
                 onClick={handleOpenDocs}
               />
 
-              {/* Menu Item: Logout */}
+              {/* Élément de menu : Déconnexion */}
               <MenuItem
                 icon='logout'
                 labelText={t.logout}

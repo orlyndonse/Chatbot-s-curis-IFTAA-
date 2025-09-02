@@ -37,7 +37,7 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
     console.log(`AppLoader: Found ${conversations.length} conversations.`);
 
     // 3. Fetch messages for the most recent conversation CONDITIONALLY
-    // <-- MODIFICATION ICI -->
+  
     if (conversations.length > 0 && !fromLogin) { // Ne charge les messages que si on ne vient PAS du login
       const latestConversationUid = conversations[0].uid;
       console.log(`AppLoader: Fetching messages for latest conversation ${latestConversationUid}...`);
@@ -48,7 +48,6 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
       } catch (messageError) {
           console.error(`AppLoader: Error fetching initial messages for ${latestConversationUid}:`, messageError);
           initialMessages = [];
-          // Optionnel: Afficher une notification? Pas idéal dans un loader.
       }
     } else if (fromLogin) {
         console.log("AppLoader: Coming from login, skipping initial message fetch.");
@@ -57,7 +56,6 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
         console.log("AppLoader: No conversations found or error fetching, skipping initial message fetch.");
         initialMessages = []; // Assurer que c'est vide s'il n'y a pas de conversations
     }
-    // <-- FIN MODIFICATION -->
 
     console.log("AppLoader: Data loading complete.");
 

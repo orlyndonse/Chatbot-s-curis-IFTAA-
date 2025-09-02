@@ -1,4 +1,3 @@
-// MenuItem.jsx - Mis à jour avec icônes locales
 import PropTypes from 'prop-types';
 import Icon from './Icon';
 

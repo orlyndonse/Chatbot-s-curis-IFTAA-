@@ -23,7 +23,6 @@ const Avatar = ({ name }) => {
   
   return (
     <figure className="avatar inline-flex items-center justify-center rounded-full bg-opacity-80 text-white w-10 h-10 overflow-hidden">
-      {/* Si vous implémentez une image d'avatar plus tard, vous pourriez ajouter une condition ici */}
       <div 
         style={{ backgroundColor: bgColor }}
         className="w-full h-full flex items-center justify-center text-lg font-medium"

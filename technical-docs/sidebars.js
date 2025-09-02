@@ -107,20 +107,7 @@ const sidebars = {
         'frontend/dependencies',
       ],
     },
-    // La section "Base de Données Approfondie" est couverte dans backend/database-interaction
-    // et backend/rag-components/vectorstore.md. Si vous voulez toujours une catégorie séparée,
-    // décommentez et ajustez. Pour l'instant, je la considère comme intégrée.
-    /*
-    {
-      type: 'category',
-      label: 'Base de Données Approfondie',
-      link: { type: 'generated-index', slug: '/database-deep-dive' },
-      items: [
-        'database-deep-dive/relational-db', // Pointe vers un fichier qui pourrait récapituler ou lier vers backend/database-interaction/models.md
-        'database-deep-dive/vector-db',     // Pointe vers un fichier qui pourrait récapituler ou lier vers backend/rag-components/vectorstore.md
-      ],
-    },
-    */
+    
     {
       type: 'category',
       label: 'Pipeline RAG Détaillé',

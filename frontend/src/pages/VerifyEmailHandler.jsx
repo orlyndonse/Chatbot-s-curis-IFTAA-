@@ -1,4 +1,3 @@
-// src/pages/VerifyEmailHandler.jsx
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useSnackbar } from '../hooks/useSnackbar';
@@ -50,9 +49,7 @@ const VerifyEmailHandler = () => {
         // Succès !
         setIsVerified(true);
         showSnackbar({ message: "Email vérifié avec succès ! Vous pouvez maintenant vous connecter.", type: 'success', duration: 6000 });
-        // Optionnel : Rediriger automatiquement vers login après un délai
-        // const timer = setTimeout(() => navigate('/login'), 4000);
-        // return () => clearTimeout(timer); // Nettoyage du timer
+        
 
       } catch (err) {
         console.error("Verification Error:", err);
@@ -111,7 +108,6 @@ const VerifyEmailHandler = () => {
         </p>
         <p className="text-bodyMedium text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant">
            <Link to="/login" className="text-light-primary dark:text-dark-primary hover:underline">Retour à la page de connexion</Link>
-           {/* Vous pourriez ajouter un bouton pour renvoyer l'email ici si nécessaire */}
         </p>
       </>
     );

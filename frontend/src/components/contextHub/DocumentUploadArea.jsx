@@ -1,9 +1,8 @@
-// source code/frontend/src/components/contextHub/DocumentUploadArea.jsx
 import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useDropzone } from 'react-dropzone';
-import { IconBtn } from '../Button'; // Assuming Button.jsx is in src/components/
-import { CircularProgress } from '../Progress'; // Assuming Progress.jsx is in src/components/
+import { IconBtn } from '../Button';
+import { CircularProgress } from '../Progress';
 import Icon from '../Icon';
 
 const DocumentUploadArea = ({ onFilesAdded, isUploading, supportedFormats = ".pdf,.txt,.docx,.csv,.html" }) => {
@@ -15,18 +14,17 @@ const DocumentUploadArea = ({ onFilesAdded, isUploading, supportedFormats = ".pd
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
-    noClick: true, // We'll use our own button to open the dialog
+    noClick: true, 
     noKeyboard: true,
     disabled: isUploading,
     accept: supportedFormats ? supportedFormats.split(',').reduce((acc, ext) => {
-        // Basic mapping, you might need more specific MIME types for robust validation
         if (ext === '.pdf') acc['application/pdf'] = [];
         else if (ext === '.txt') acc['text/plain'] = [];
         else if (ext === '.docx') acc['application/vnd.openxmlformats-officedocument.wordprocessingml.document'] = [];
         else if (ext === '.doc') acc['application/msword'] = [];
         else if (ext === '.csv') acc['text/csv'] = [];
         else if (ext === '.html') acc['text/html'] = [];
-        else acc[ext] = []; // Fallback for other extensions
+        else acc[ext] = [];
         return acc;
     }, {}) : undefined,
   });
@@ -62,8 +60,8 @@ const DocumentUploadArea = ({ onFilesAdded, isUploading, supportedFormats = ".pd
               </p>
               <button
                 type="button"
-                onClick={open} // Trigger file dialog
-                className="btn text text-light-primary dark:text-dark-primary mb-2 text-labelLarge" // Using your button styles
+                onClick={open}
+                className="btn text text-light-primary dark:text-dark-primary mb-2 text-labelLarge"
                 disabled={isUploading}
               >
                 Parcourir les fichiers

@@ -12,7 +12,7 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
   const [isMultiline, setMultiline] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  // Recalculate multiline status on resize or initial render
+  // Recalculer l'état multiligne lors du redimensionnement ou du rendu initial
   useEffect(() => {
     const checkMultiline = () => {
         if (inputFieldContainer.current) {
@@ -24,7 +24,7 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
     return () => window.removeEventListener('resize', checkMultiline);
   }, []);
 
-  // Maintain focus after loading or state change
+  // Maintenir le focus après un chargement ou un changement d'état
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (inputField.current && !isLoading && !isDisabled) {
@@ -42,7 +42,7 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
     setMultiline(inputFieldContainer.current.clientHeight > 64);
     setInputValue(currentText);
     
-    // Force the div to be truly empty when there's no text
+    // Forcer la div à être véritablement vide lorsqu'il n'y a pas de texte
     if (!currentText && inputField.current.innerHTML !== '') {
       inputField.current.innerHTML = '';
     }
@@ -77,7 +77,7 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
     onSubmit(trimmedValue);
 
     if (inputField.current) {
-        inputField.current.innerHTML = ''; // This will trigger the :empty CSS selector
+        inputField.current.innerHTML = ''; // Cela déclenchera le sélecteur CSS :empty
     }
     setInputValue('');
     setMultiline(false);
@@ -115,7 +115,7 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
     if (typeof onUpload === 'function') {
       onUpload(e.target.files);
     }
-    // Reset the input to allow uploading the same file again
+    // Réinitialiser l'entrée pour permettre de télécharger le fichier à nouveau
     e.target.value = '';
   }, [onUpload]);
 

@@ -1,4 +1,3 @@
-// source code/frontend/src/components/contextHub/ContextSizeIndicator.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import Icon from '../Icon';

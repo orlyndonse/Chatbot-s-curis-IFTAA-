@@ -1,5 +1,3 @@
-// frontend/src/contexts/LanguageContext.jsx
-
 import React, { createContext, useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import PropTypes from 'prop-types';
 

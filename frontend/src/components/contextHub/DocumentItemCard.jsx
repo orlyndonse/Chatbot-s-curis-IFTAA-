@@ -1,8 +1,7 @@
-// frontend/src/components/contextHub/DocumentItemCard.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import { IconBtn } from '../Button';
-import Icon from '../Icon'; // Import du nouveau composant Icon
+import Icon from '../Icon'; 
 
 const DocumentItemCard = ({ 
   document, 

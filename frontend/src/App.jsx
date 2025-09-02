@@ -169,7 +169,7 @@ const App = () => {
       // Log du début du streaming
       setLogs(prev => [...prev, `INFO: Début du streaming pour la conversation ${targetConversation.uid}`]);
       
-      // --- 3. Appel streaming corrigé ---
+      // --- 3. Appel streaming ---
       const token = localStorage.getItem("awesomeLeadsToken");
       const response = await fetch(
         `http://localhost:8000/api/v1/conversations/${targetConversation.uid}/messages/stream`,
@@ -361,12 +361,12 @@ const App = () => {
     setIsEditingMessage(true); 
     setLogs([]); // Réinitialise les logs pour l'édition
     
-    // ✅ CORRECTION : Créer un message temporaire avec isLoading pour déclencher StreamingMarkdown
+    // Créer un message temporaire avec isLoading pour déclencher StreamingMarkdown
     const tempEditedMessage = {
       uid: uid,
       prompt: t,
       response: '', // Commence avec une réponse vide pour le streaming
-      isLoading: true, // ✅ CRITIQUE : Ceci déclenche le mode streaming dans StreamingMarkdown
+      isLoading: true, // Ceci déclenche le mode streaming dans StreamingMarkdown
       created_at: new Date().toISOString(),
     };
     
@@ -420,11 +420,11 @@ const App = () => {
             const data = line.substring(6);
             
             if (data === '[DONE]') {
-              // ✅ CORRECTION : Marquer comme terminé pour arrêter l'animation de streaming
+              // Marquer comme terminé pour arrêter l'animation de streaming
               setCurrentMessages(prev =>
                 prev.map(msg =>
                   msg.uid === uid
-                    ? { ...msg, isLoading: false } // ✅ Arrêter le mode streaming
+                    ? { ...msg, isLoading: false } // Arrêter le mode streaming
                     : msg
                 )
               );
@@ -434,14 +434,14 @@ const App = () => {
             
             if (data.trim() && !data.startsWith('[ERROR]')) {
               chunkCount++;
-              // ✅ CORRECTION : Accumuler la réponse tout en gardant isLoading=true
+              //  Accumuler la réponse tout en gardant isLoading=true
               setCurrentMessages(prev =>
                 prev.map(msg =>
                   msg.uid === uid
                     ? { 
                         ...msg, 
                         response: (msg.response || '') + data,
-                        isLoading: true // ✅ Garder le mode streaming actif
+                        isLoading: true // Garder le mode streaming actif
                       }
                     : msg
                 )
@@ -685,7 +685,7 @@ const App = () => {
               > 
                 <div className={`bg-light-surface dark:bg-dark-surfaceContainer p-3 rounded-lg shadow-sm max-w-[85%] ${editingMessageId === msg.uid ? 'w-full border-2 border-light-primary/50 dark:border-dark-primary/50 ring-2 ring-light-primary/30 dark:ring-dark-primary/30' : ''}`}> 
                   {editingMessageId === msg.uid ? ( 
-                    // Votre logique d'édition existante...
+                    // Votre logique d'édition ...
                     <div className="flex flex-col gap-2">
                       <textarea 
                         ref={editInputRef} 
@@ -726,7 +726,7 @@ const App = () => {
                     </p>
                   )} 
                 </div> 
-                {/* Bouton d'édition existant... */}
+                {/* Bouton d'édition ... */}
                 {editingMessageId !== msg.uid && index === currentMessages.length - 1 && msg.prompt && !msg.isLoading && ( 
                   <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"> 
                     <IconBtn 
@@ -750,7 +750,7 @@ const App = () => {
                 className="flex items-start justify-end"
               > 
                 <div className='bg-light-secondaryContainer dark:bg-dark-secondaryContainer p-3 rounded-lg shadow-sm max-w-[85%]'> 
-                  {/* ✅ CORRECTION : StreamingMarkdown gère automatiquement le formatage pendant l'édition aussi */}
+                  {/*  StreamingMarkdown gère automatiquement le formatage pendant l'édition aussi */}
                   <StreamingMarkdown 
                     content={msg.response || ''} 
                     isStreaming={msg.isLoading || false}

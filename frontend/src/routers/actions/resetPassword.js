@@ -1,11 +1,10 @@
-// src/routers/actions/resetPassword.js
 import { redirect } from "react-router-dom";
 
 export const resetPasswordAction = async ({ request }) => {
     const formData = await request.formData();
     const newPassword = formData.get("new_password");
     const confirmPassword = formData.get("confirm_password");
-    // Récupérer le token depuis le formulaire (ajouté à l'étape 4)
+    // Récupérer le token depuis le formulaire
     const token = formData.get("token");
 
     // ... (Validations client inchangées) ...

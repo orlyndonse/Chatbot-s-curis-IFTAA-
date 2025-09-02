@@ -1,4 +1,3 @@
-// src/routers/loaders/resetPasswordLoader.js
 export const resetPasswordLoader = async ({ request }) => { // request est disponible ici
   const url = new URL(request.url);
   const token = url.searchParams.get("token"); // Lire depuis ?token=
@@ -9,7 +8,6 @@ export const resetPasswordLoader = async ({ request }) => { // request est dispo
        throw new Response("Token manquant dans le lien", { status: 400 });
   }
 
-  // Validation optionnelle (garder si tu veux)
   try {
        const res = await fetch(`http://localhost:8000/api/v1/auth/validate-reset-token/${token}`);
        if (!res.ok) throw new Error("Token invalide ou expiré");

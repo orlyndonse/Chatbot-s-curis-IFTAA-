@@ -1,4 +1,3 @@
-// Fixed version of DocumentPreview.jsx
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { CircularProgress } from './Progress';
@@ -53,7 +52,6 @@ const DocumentPreview = ({ document, isLoading: isLoadingContent, onClose, onAdd
         </div>
       );
     } else if (document.type.includes('pdf') && objectUrl) {
-      // FIXED: Better PDF iframe handling with proper container sizing
       previewContentElement = (
         <div className="h-full w-full bg-white dark:bg-gray-800 rounded overflow-hidden">
           <iframe 
@@ -132,7 +130,6 @@ const DocumentPreview = ({ document, isLoading: isLoadingContent, onClose, onAdd
           <IconBtn icon="close" title="Fermer" onClick={onClose} size="small"/>
         </div>
         
-        {/* FIXED: Properly sized preview area */}
         <div className="flex-1 overflow-hidden bg-light-surface dark:bg-dark-surface rounded-md">
             {previewContentElement}
         </div>

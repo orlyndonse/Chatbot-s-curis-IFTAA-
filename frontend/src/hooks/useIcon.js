@@ -1,4 +1,3 @@
-// hooks/useIcon.js
 import { useMemo } from 'react';
 
 // Configuration centralisée des icônes

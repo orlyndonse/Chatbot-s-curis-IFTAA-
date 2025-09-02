@@ -1,11 +1,10 @@
-// Sidebar.jsx - Mis à jour avec icônes locales
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 import { ExtendedFab, IconBtn } from './Button';
 import { CircularProgress } from './Progress';
-import Icon from './Icon'; // Import du composant Icon
+import Icon from './Icon';
 
 const Sidebar = ({
   isSidebarOpen,

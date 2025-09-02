@@ -1,8 +1,7 @@
-// frontend/src/components/contextHub/ContextHubPanel.jsx
 import React, { useState, useMemo, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { IconBtn } from '../Button';
-import Icon from '../Icon'; // Import du nouveau composant Icon
+import Icon from '../Icon';
 import ContextSizeIndicator from './ContextSizeIndicator';
 import DocumentUploadArea from './DocumentUploadArea';
 import DocumentItemCard from './DocumentItemCard';

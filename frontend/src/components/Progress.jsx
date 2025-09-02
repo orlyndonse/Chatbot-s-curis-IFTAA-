@@ -17,7 +17,6 @@ CircularProgress.protoTypes = {
 
 const LinearProgress = ({ classes = ''}) => {
 
-    //Define
 
     const progressbarVariant = {
         start: { scale:0 },

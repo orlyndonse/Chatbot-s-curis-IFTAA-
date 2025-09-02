@@ -61,8 +61,8 @@ Snackbar.propTypes = {
     snackbar: PropTypes.shape({
       open: PropTypes.bool.isRequired,
       message: PropTypes.string.isRequired,
-      type: PropTypes.oneOf(['error', 'success', 'info']), // Ajouté
-      duration: PropTypes.number // Ajouté
+      type: PropTypes.oneOf(['error', 'success', 'info']), 
+      duration: PropTypes.number
     })
   };
 

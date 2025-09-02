@@ -25,7 +25,7 @@ const sidebars = {
     {
       type: 'category',
       label: 'Understanding the Interface',
-      link: {type: 'generated-index'}, // Added for consistency, creates an overview page
+      link: {type: 'generated-index'},
       items: [
         'interface-overview/sidebar',
         'interface-overview/main-chat-area',

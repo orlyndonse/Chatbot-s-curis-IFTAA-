@@ -1,5 +1,3 @@
-// frontend/src/utils/translations.js
-
 export const translations = {
     fr: {
       toggleTheme: (theme) => `Thème ${theme === 'light' ? 'sombre' : 'clair'}`,

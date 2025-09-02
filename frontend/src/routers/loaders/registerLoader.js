@@ -5,8 +5,6 @@
 import { redirect } from "react-router-dom";
 
 export const registerLoader = async () => {
-  // Si vous voulez rediriger les utilisateurs déjà connectés
-  // (À adapter selon votre logique d'authentification)
   const token = localStorage.getItem("awesomeLeadsToken");
   if (token) {
     try {

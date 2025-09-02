@@ -1,11 +1,11 @@
 import { redirect } from 'react-router-dom';
 
-const API_BASE_URL = "http://localhost:8000"; // Or use import.meta.env.VITE_API_URL
+const API_BASE_URL = "http://localhost:8000";
 
 /**
- * Helper function for making authenticated API requests.
- * Handles token retrieval, adding Authorization header, basic error handling,
- * and redirects on 401/403 errors.
+ * Fonction utilitaire pour effectuer des requêtes API authentifiées.
+ * Gère la récupération du jeton, l'ajout de l'en-tête Authorization, la gestion basique des erreurs,
+ * et les redirections en cas d'erreurs 401/403.
  */
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem("awesomeLeadsToken");
@@ -22,12 +22,12 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  // Only set Authorization header if token exists
+  // Ne définir l'en-tête Authorization que si le jeton existe
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Do not set Content-Type if the body is FormData
+  // Ne pas définir Content-Type si le corps est FormData
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
@@ -61,19 +61,19 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
       throw error;
     }
 
-    // Handle 204 No Content specifically
+    // Gérer spécifiquement le statut 204 No Content
     if (response.status === 204) {
-      return null; // Or return a success indicator if needed
+      return null;// Ou renvoyer un indicateur de succès si nécessaire
     }
 
-    // Assume JSON response for other successful requests
+    // // Supposer une réponse JSON pour les autres requêtes réussies
     return await response.json();
 
   } catch (error) {
     if (error instanceof Response && error.status >= 300 && error.status < 400) {
-      throw error; // Re-throw redirect responses
+      throw error; // Relancer les réponses de redirection
     }
     console.error(`fetchWithAuth Error during fetch for ${endpoint}:`, error);
-    throw error; // Re-throw the error to be handled by the caller
+    throw error; // Relancer l'erreur pour qu'elle soit gérée par l'appelant
   }
 };
