@@ -51,16 +51,33 @@ export const loginAction = async ({ request }) => {
       };
     }
 
-    // 3. Succès - Stockage du token
+    // 3. Succès - Stockage des tokens ET de l'utilisateur
     localStorage.setItem('awesomeLeadsToken', data.access_token);
     if (data.refresh_token) {
       localStorage.setItem('awesomeLeadsRefreshToken', data.refresh_token);
     }
+    
+    // Stocker les informations utilisateur dès le login
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      console.log("User data stored in localStorage:", data.user.email);
+      console.log("User role:", data.user.role);
+    }
 
-    console.log("Token stocké avec succès, redirection vers l'accueil (depuis login)..."); // Log amélioré
+    console.log("Token et utilisateur stockés avec succès, redirection...");
 
-    // 4. Redirection vers la page d'accueil AVEC un paramètre
-    return redirect('/?fromLogin=true'); // <-- MODIFICATION ICI
+    // LA LOGIQUE DE REDIRECTION PROFESSIONNELLE
+    // On vérifie le rôle de l'utilisateur qui vient d'être retourné par l'API
+    if (data.user && data.user.role === 'admin') {
+      // Si c'est un admin, on l'envoie vers sa page principale
+      console.log("Redirection vers admin/users pour l'utilisateur admin");
+      return redirect('/admin/users');
+    } else {
+      // Pour tous les autres utilisateurs, on les envoie vers le chat
+      // fromLogin=true permet d'éviter de charger les messages immédiatement
+      console.log("Redirection vers l'accueil pour l'utilisateur standard");
+      return redirect('/?fromLogin=true');
+    }
 
   } catch (error) {
     console.error("Erreur de connexion fetch:", error); // Log l'erreur réseau/fetch

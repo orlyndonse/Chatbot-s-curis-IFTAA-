@@ -115,7 +115,6 @@
     dark:text-dark-onSurface;
   }
 
-  /* Ce sélecteur cible à la fois le focus et quand l'input n'est pas vide */
   .text-field-wrapper:focus-within .label-text,
   .text-field-wrapper:has(.text-field:not(:placeholder-shown)) .label-text {
     @apply text-xs
@@ -198,10 +197,9 @@
     pointer-events-none;
   }
 
-  /* Adding text button variant as used in DocumentUploadArea */
   .btn.text {
-    @apply px-3 /* Text buttons often have slightly less padding */
-    hover:bg-light-primary/5 /* Example hover for text button */
+    @apply px-3
+    hover:bg-light-primary/5 
     dark:hover:bg-dark-primary/5;
     --state-layer-bg: theme('colors.light.primary');
   }
@@ -282,25 +280,24 @@
     dark:bg-dark-primary
     rounded-full
     origin-right
-    -translate-x-full; /* Corrected class for animation if needed, ensure animation is defined */
+    -translate-x-full;
   }
 
   .circular-progress{
     @apply border-4
-    border-current /* Uses current text color for the main part of the spinner */
-    /* dark:border-current - already covered by border-current if text color is set */
-    border-r-transparent /* Makes one side transparent for the spinning effect */
+    border-current 
+    border-r-transparent 
     w-12
     h-12
     rounded-full
     animate-spin;
     }
 
-    .circular-progress.large { /* Specific class for large, if default is not w-12 h-12 */
+    .circular-progress.large {
         @apply w-12 h-12 border-4;
     }
     .circular-progress.small {
-      @apply border-[3px] /* Thinner border for smaller spinner */
+      @apply border-[3px]
       w-5
       h-5;
     }
@@ -318,7 +315,7 @@
       px-4
       py-[14px]
       origin-bottom
-      z-50 /* Ensure snackbar is above most things, including context hub panel (z-40) */
+      z-50
       sm:left-6
       sm:right-auto
       sm:bottom-6
@@ -384,7 +381,7 @@
     min-w-7
     min-h-7;
   }
-  .icon-btn.large { /* Corrected: remove space before large */ 
+  .icon-btn.large { 
     @apply w-12
     h-12
     min-w-12
@@ -586,11 +583,11 @@
   /*
   *nav-link & nav-item (for sidebar conversation list)
   */
-  .nav-item { /* Added for better specificity and grouping */
-    /* Base styles for nav items can go here if needed */
+  .nav-item {
+    
   }
 
-  .nav-link { /* This might be too generic, consider renaming if it conflicts elsewhere */
+  .nav-link {
     --state-layer-bg: theme('colors.light.onSurfaceVariant');
     @apply flex
     items-center
@@ -721,13 +718,9 @@
     overflow-hidden;
   }
 
-  /* Styles for DocumentItemCard (can be expanded) */
   .document-item-card {
-    /* Base styles are applied with @apply in DocumentItemCard.jsx */
-    /* Add specific non-Tailwind styles here if needed */
   }
   
-  /* Styles for DocumentFilters (can be expanded) */
   .document-filters select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
@@ -736,7 +729,6 @@
     padding-right: 2.5rem;
   }
   
-  /* Dark mode for select arrow */
   @media (prefers-color-scheme: dark) {
     .document-filters select {
        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");

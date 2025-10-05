@@ -46,14 +46,6 @@ export const registerAction = async ({ request }) => {
     console.log("Signup successful, redirecting to send-email page...");
     return redirect(`/send-email?email=${encodeURIComponent(userData.email)}`);
 
-    /* ---> SECTION SUPPRIMÉE <---
-    // 2. Connexion automatique (Supprimée car cause le problème)
-    const loginResponse = await fetch("http://localhost:8000/api/v1/auth/login", { ... });
-    if (!loginResponse.ok) { ... }
-    const { access_token } = await loginResponse.json();
-    localStorage.setItem("awesomeLeadsToken", access_token);
-    */
-
   } catch (err) {
     // Gérer les erreurs réseau ou autres erreurs inattendues
     console.error("Error during registration fetch:", err);

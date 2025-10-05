@@ -58,6 +58,7 @@ frontend/
 │   │   ├── useSnackbar.js
 │   │   └── useToggle.js
 │   ├── pages/                  # Composants React représentant des pages entières
+│   │   ├── AdminUserManagement.jsx
 │   │   ├── EmailVerified.jsx
 │   │   ├── Greetings.jsx
 │   │   ├── Login.jsx
@@ -77,6 +78,7 @@ frontend/
 │   │   │   ├── resetPasswordSuccessAction.js
 │   │   │   └── sendEmailAction.js
 │   │   ├── loaders/            # Fonctions de chargement de données pour les routes
+│   │   │   ├── adminUsersLoader.js
 │   │   │   ├── appLoader.js
 │   │   │   ├── EmailVerifiedLoader.js
 │   │   │   ├── loginLoader.js

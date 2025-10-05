@@ -70,6 +70,12 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
     setShowUserMenu(false);
   };
 
+  // Nouvelle fonction pour naviguer vers la gestion des utilisateurs
+  const handleAdminUsers = () => {
+    navigate('/admin/users');
+    setShowUserMenu(false);
+  };
+
   const toggleUserMenu = () => {
     setShowUserMenu(!showUserMenu);
   };
@@ -127,6 +133,15 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
           
           <div ref={userMenuRef}>
             <Menu classes={`${showUserMenu ? 'active' : ''} z-30`}>
+
+              <MenuItem
+                icon='account_circle'
+                labelText={t.profile || 'Mon Profil'}
+                onClick={() => {
+                  navigate('/profile');
+                  setShowUserMenu(false);
+                }}
+              />
               
               {/* Élément de menu : Langue */}
               <MenuItem
@@ -141,6 +156,15 @@ const TopAppBar = ({ toggleSidebar, user, toggleContextHub }) => {
                 labelText={t.toggleTheme(theme)}
                 onClick={handleThemeToggle}
               />
+
+              {/* NOUVEAU : Élément de menu conditionnel pour l'administration des utilisateurs */}
+              {user && user.role === 'admin' && (
+                <MenuItem
+                  icon='manage_accounts'
+                  labelText={t.userManagement || 'Gestion Utilisateurs'}
+                  onClick={handleAdminUsers}
+                />
+              )}
 
               {/* Élément de menu : Documentation */}
               <MenuItem

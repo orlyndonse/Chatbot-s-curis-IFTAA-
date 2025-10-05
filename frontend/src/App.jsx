@@ -8,8 +8,6 @@ import { useSnackbar } from './hooks/useSnackbar';
 import { fetchWithAuth } from './utils/fetchWithAuth';
 import { useLanguage } from './contexts/LanguageContext';
 
-
-
 import PageTitle from './components/PageTitle';
 import TopAppBar from './components/TopAppBar';
 import Sidebar from './components/Sidebar';
@@ -49,49 +47,85 @@ const App = () => {
   const [renameInputText, setRenameInputText] = useState('');
   const [isSavingRename, setIsSavingRename] = useState(false);
   
-  const [isUploading, setIsUploading] = useState(false);
   const [documentsInContext, setDocumentsInContext] = useState([]);
   const [currentContextSize, setCurrentContextSize] = useState(0);
-  const [maxContextSize, setMaxContextSize] = useState(1024 * 1024 * 5); // Example: 5MB
+  const [maxContextSize, setMaxContextSize] = useState(1024 * 1024 * 5); // 5MB
   const [deletingDocumentId, setDeletingDocumentId] = useState(null);
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [documentToPreview, setDocumentToPreview] = useState(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const messagesEndRef = useRef(null);
   const editInputRef = useRef(null);
 
-  useEffect(() => { if (!user) { navigate('/login'); } }, [user, navigate]);
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages]);
+  useEffect(() => { 
+    if (!user) { 
+      navigate('/login'); 
+    } 
+  }, [user, navigate]);
   
-  useEffect(() => { if (editingMessageId && editInputRef.current) { const textarea = editInputRef.current; textarea.style.height = 'auto'; textarea.style.height = `${textarea.scrollHeight}px`; textarea.focus(); textarea.select(); } }, [editingMessageId]);
+  useEffect(() => { 
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); 
+  }, [currentMessages]);
+  
+  useEffect(() => { 
+    if (editingMessageId && editInputRef.current) { 
+      const textarea = editInputRef.current; 
+      textarea.style.height = 'auto'; 
+      textarea.style.height = `${textarea.scrollHeight}px`; 
+      textarea.focus(); 
+      textarea.select(); 
+    } 
+  }, [editingMessageId]);
 
-  const handleCancelEdit = useCallback(() => { setEditingMessageId(null); setEditText(''); setIsEditingMessage(false); }, []);
-  const handleCancelRename = useCallback(() => { setRenamingConvId(null); setRenameInputText(''); setIsSavingRename(false);}, []);
+  const handleCancelEdit = useCallback(() => { 
+    setEditingMessageId(null); 
+    setEditText(''); 
+    setIsEditingMessage(false); 
+  }, []);
+  
+  const handleCancelRename = useCallback(() => { 
+    setRenamingConvId(null); 
+    setRenameInputText(''); 
+    setIsSavingRename(false);
+  }, []);
 
   const fetchConversationData = useCallback(async (conversationUid) => {
     if (!conversationUid) {
-      setCurrentMessages([]); setDocumentsInContext([]); setCurrentContextSize(0); setIsLoadingData(false); return;
+      setCurrentMessages([]);
+      setDocumentsInContext([]);
+      setCurrentContextSize(0);
+      setIsLoadingData(false);
+      return;
     }
-    handleCancelEdit(); handleCancelRename(); setIsLoadingData(true);
-    if (activeConversation?.uid !== conversationUid || currentMessages.length === 0) {
-        setCurrentMessages([]);
+    
+    handleCancelEdit();
+    handleCancelRename();
+    setIsLoadingData(true);
+    
+    // Cette condition est ajustée pour ne pas dépendre de la longueur des messages
+    if (activeConversation?.uid !== conversationUid) {
+      setCurrentMessages([]);
     }
-    setDocumentsInContext([]); setCurrentContextSize(0);
+    setDocumentsInContext([]);
+    setCurrentContextSize(0);
+    
     try {
       const [messages, docsResponse] = await Promise.all([
         fetchWithAuth(`/api/v1/conversations/${conversationUid}/messages`),
         fetchWithAuth(`/api/v1/conversations/${conversationUid}/documents`)
       ]);
-      if (!(activeConversation?.uid === conversationUid && currentMessages.length > 0 && messages.length === 0)){
-         setCurrentMessages(Array.isArray(messages) ? messages : []);
-      }
+      
+      // On met à jour les messages avec la version finale du serveur
+      setCurrentMessages(Array.isArray(messages) ? messages : []);
+      
       const fetchedDocs = Array.isArray(docsResponse) ? docsResponse : [];
       const processedDocs = fetchedDocs.map(doc => ({
         ...doc,
-        isActiveInContext: doc.is_active !== undefined ? doc.is_active : true
+        isActiveInContext: Boolean(doc.isActiveInContext) 
       }));
       setDocumentsInContext(processedDocs);
       setCurrentContextSize(processedDocs.reduce((sum, doc) => sum + (doc.size || 0), 0));
@@ -101,28 +135,63 @@ const App = () => {
     } finally {
       setIsLoadingData(false);
     }
+    // --- On retire currentMessages.length des dépendances ---
   }, [showSnackbar, handleCancelEdit, handleCancelRename, activeConversation?.uid]);
 
-  useEffect(() => { if (activeConversation?.uid) { fetchConversationData(activeConversation.uid); } else { setCurrentMessages([]); setDocumentsInContext([]); setCurrentContextSize(0); setIsLoadingData(false);}}, [activeConversation, fetchConversationData]);
-    
-  const handleSelectConversation = useCallback((conversation) => { if (activeConversation?.uid === conversation?.uid || renamingConvId) { if (window.innerWidth < 1024 && !renamingConvId && isSidebarOpen) toggleSidebar(); return; } setActiveConversation(conversation); if (window.innerWidth < 1024 && isSidebarOpen) toggleSidebar(); }, [activeConversation?.uid, renamingConvId, isSidebarOpen, toggleSidebar]);
+  useEffect(() => { 
+    // Ne pas charger les données si on est en train d'envoyer un message
+    // Cela évite d'écraser les messages temporaires pendant l'envoi
+    if (isSendingMessage || isCreatingConversation) {
+      return;
+    }
   
-  const handleNewConversationRequest = useCallback(() => { handleCancelEdit(); handleCancelRename(); setActiveConversation(null); if (window.innerWidth < 1024 && isSidebarOpen) toggleSidebar();}, [isSidebarOpen, toggleSidebar, handleCancelEdit, handleCancelRename]);
+    if (activeConversation?.uid) { 
+      fetchConversationData(activeConversation.uid); 
+    } else { 
+      setCurrentMessages([]);
+      setDocumentsInContext([]);
+      setCurrentContextSize(0);
+      setIsLoadingData(false);
+    }
+  }, [activeConversation, fetchConversationData, isSendingMessage, isCreatingConversation]);
+    
+  const handleSelectConversation = useCallback((conversation) => { 
+    if (activeConversation?.uid === conversation?.uid || renamingConvId) { 
+      if (window.innerWidth < 1024 && !renamingConvId && isSidebarOpen) {
+        toggleSidebar(); 
+      }
+      return; 
+    } 
+    
+    setActiveConversation(conversation); 
+    if (window.innerWidth < 1024 && isSidebarOpen) {
+      toggleSidebar(); 
+    }
+  }, [activeConversation?.uid, renamingConvId, isSidebarOpen, toggleSidebar]);
+  
+  const handleNewConversationRequest = useCallback(() => { 
+    handleCancelEdit(); 
+    handleCancelRename(); 
+    setActiveConversation(null); 
+    if (window.innerWidth < 1024 && isSidebarOpen) {
+      toggleSidebar();
+    }
+  }, [isSidebarOpen, toggleSidebar, handleCancelEdit, handleCancelRename]);
 
   const handleSendMessage = useCallback(async (promptText) => {
     if (isSendingMessage || isCreatingConversation || renamingConvId) {
       showSnackbar({ message: "Veuillez attendre la fin de l'opération en cours.", type: 'info' });
       return;
     }
+    
     handleCancelEdit();
     setIsSendingMessage(true);
-    setLogs([]); // Réinitialise les logs à chaque nouvelle requête
+    setLogs([]);
   
     let targetConversation = activeConversation;
     const tempPromptId = `temp-prompt-${Date.now()}`;
     let createdConversationLocally = false;
   
-    // --- 1. Gestion optimiste du prompt et de la conversation ---
     try {
       const optimisticPromptMessage = {
         uid: tempPromptId,
@@ -132,6 +201,7 @@ const App = () => {
         created_at: new Date().toISOString(),
       };
   
+      // Gestion de la création de conversation
       if (!targetConversation) {
         setIsCreatingConversation(true);
         const newTitle = promptText.substring(0, 30) + (promptText.length > 30 ? '...' : '');
@@ -140,36 +210,44 @@ const App = () => {
           body: JSON.stringify({ title: newTitle }),
         });
         setIsCreatingConversation(false);
-        if (!newConversation?.uid) throw new Error("La création de la conversation a échoué.");
+        
+        if (!newConversation?.uid) {
+          throw new Error("La création de la conversation a échoué.");
+        }
         
         setAllConversations(prev => [newConversation, ...prev]);
-        setActiveConversation(newConversation);
+        
+        // Définir la conversation active MAIS ne pas déclencher le useEffect
         targetConversation = newConversation;
         createdConversationLocally = true;
-        setCurrentMessages([optimisticPromptMessage]);
         
-        // Ajouter un log pour la création de conversation
         setLogs(prev => [...prev, `INFO: Nouvelle conversation créée - ID: ${newConversation.uid}`]);
-      } else {
-        setCurrentMessages(prev => [...prev, optimisticPromptMessage]);
       }
   
-      // --- 2. Préparation pour la réponse en streaming ---
+      // Ajouter les messages temporaires AVANT de changer activeConversation
+      // Ajouter d'abord le message prompt
+      setCurrentMessages(prev => [...prev, optimisticPromptMessage]);
+  
+      // Puis ajouter le message de réponse
       const tempResponseId = `temp-response-${Date.now()}`;
       const optimisticResponseMessage = {
         uid: tempResponseId,
-        prompt: null, // C'est une réponse, pas un prompt
-        response: '', // Commence avec une réponse vide
-        isLoading: true, // Pour afficher un indicateur de chargement
+        prompt: null,
+        response: '',
+        isLoading: true,
         created_at: new Date().toISOString(),
       };
-      // Ajoute immédiatement le conteneur de réponse vide à l'UI
-      setCurrentMessages(prev => [...prev, optimisticResponseMessage]);
       
-      // Log du début du streaming
+      setCurrentMessages(prev => [...prev, optimisticResponseMessage]);
+  
+      // Changer activeConversation APRÈS avoir ajouté les messages temporaires
+      if (createdConversationLocally) {
+        setActiveConversation(targetConversation);
+      }
+      
       setLogs(prev => [...prev, `INFO: Début du streaming pour la conversation ${targetConversation.uid}`]);
       
-      // --- 3. Appel streaming ---
+      // Appel streaming
       const token = localStorage.getItem("awesomeLeadsToken");
       const response = await fetch(
         `http://localhost:8000/api/v1/conversations/${targetConversation.uid}/messages/stream`,
@@ -203,13 +281,11 @@ const App = () => {
           break;
         }
         
-        // Décoder le chunk
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
         
-        // Traiter les lignes complètes (SSE)
         const lines = buffer.split('\n');
-        buffer = lines.pop(); // Garder la ligne incomplète
+        buffer = lines.pop();
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -229,14 +305,12 @@ const App = () => {
             
             if (data.trim()) {
               chunkCount++;
-              // Ajouter le chunk à la réponse en accumulant le contenu
               setCurrentMessages(prev =>
                 prev.map(msg =>
                   msg.uid === tempResponseId
                     ? { 
                         ...msg, 
                         response: (msg.response || '') + data,
-                        // Assurez-vous que isLoading reste true pendant le streaming
                         isLoading: true
                       }
                     : msg
@@ -248,17 +322,24 @@ const App = () => {
           }
         }
         
-        // Vérifier si on a reçu [DONE] pour sortir de la boucle while
         if (lines.some(line => line.startsWith('data: [DONE]'))) {
           break;
         }
       }
   
-      // --- 4. Finalisation ---
-      setLogs(prev => [...prev, `INFO: Rafraîchissement des données de la conversation`]);
-      // Une fois le stream terminé, on rafraîchit les données pour obtenir les vrais UID
-      await fetchConversationData(targetConversation.uid);
-      
+      // Finalisation
+      setLogs(prev => [...prev, `INFO: Finalisation du message côté client.`]);
+  
+      // Mettre à jour l'état de chargement final
+      setCurrentMessages(prev =>
+        prev.map(msg =>
+          msg.uid === tempResponseId
+            ? { ...msg, isLoading: false }
+            : msg
+        )
+      );
+  
+      // Mettre à jour la date de la conversation dans la barre latérale
       const nowISO = new Date().toISOString();
       setAllConversations(prev =>
         prev.map(c => c.uid === targetConversation.uid ? { ...c, update_at: nowISO } : c)
@@ -285,7 +366,7 @@ const App = () => {
       setIsCreatingConversation(false);
       setLogs(prev => [...prev, `INFO: Nettoyage terminé - États réinitialisés`]);
     }
-  }, [activeConversation, user?.uid, showSnackbar, isSendingMessage, isCreatingConversation, renamingConvId, handleCancelEdit, fetchConversationData]);
+  }, [activeConversation, user?.uid, showSnackbar, isSendingMessage, isCreatingConversation, renamingConvId, handleCancelEdit]);
   
   const handleDeleteConversation = useCallback(async (conversationUid) => { 
     if (isEditingMessage || renamingConvId) { 
@@ -293,15 +374,21 @@ const App = () => {
       return; 
     } 
     if (isDeletingConversation) return; 
+    
     setIsDeletingConversation(conversationUid); 
-    if (activeConversation?.uid === conversationUid) handleCancelEdit(); 
+    if (activeConversation?.uid === conversationUid) {
+      handleCancelEdit(); 
+    }
+    
     try { 
       await fetchWithAuth(`/api/v1/conversations/${conversationUid}`, { method: 'DELETE' }); 
       const updated = allConversations.filter(c => c.uid !== conversationUid); 
       setAllConversations(updated); 
+      
       if (activeConversation?.uid === conversationUid) { 
         setActiveConversation(updated[0] || null); 
       } 
+      
       showSnackbar({ message: "Discussion supprimée.", type: 'success' }); 
     } catch (e) { 
       showSnackbar({ message: "Erreur suppression.", type: 'error' }); 
@@ -324,14 +411,21 @@ const App = () => {
       return; 
     } 
     if (isSavingRename) return; 
+    
     setIsSavingRename(true); 
     try { 
       const d = await fetchWithAuth(`/api/v1/conversations/${id}/rename`, { 
         method: 'PUT', 
         body: JSON.stringify({ new_title: t }), 
       }); 
-      setAllConversations(p => p.map(c => c.uid === id ? {...c, title: d.title, update_at: d.update_at} : c).sort((a,b) => new Date(b.update_at||b.created_at) - new Date(a.update_at||a.created_at))); 
-      if (activeConversation?.uid === id) setActiveConversation(p => p ? {...p, title: d.title, update_at: d.update_at} : null); 
+      
+      setAllConversations(p => p.map(c => c.uid === id ? {...c, title: d.title, update_at: d.update_at} : c)
+        .sort((a,b) => new Date(b.update_at||b.created_at) - new Date(a.update_at||a.created_at))); 
+      
+      if (activeConversation?.uid === id) {
+        setActiveConversation(p => p ? {...p, title: d.title, update_at: d.update_at} : null); 
+      }
+      
       showSnackbar({ message: "Renommée.", type: 'success' }); 
       handleCancelRename(); 
     } catch (e) { 
@@ -341,7 +435,9 @@ const App = () => {
     }
   }, [activeConversation?.uid, showSnackbar, handleCancelRename, isSavingRename]);
 
-  const handleRenameInputChange = useCallback((e) => { setRenameInputText(e.target.value); }, []);
+  const handleRenameInputChange = useCallback((e) => { 
+    setRenameInputText(e.target.value); 
+  }, []);
 
   const handleStartEdit = useCallback((uid, prompt) => { 
     if (isSendingMessage || isEditingMessage || renamingConvId || isCreatingConversation) return; 
@@ -359,18 +455,17 @@ const App = () => {
     if (isSendingMessage || isCreatingConversation) return; 
     
     setIsEditingMessage(true); 
-    setLogs([]); // Réinitialise les logs pour l'édition
+    setLogs([]);
     
-    // Créer un message temporaire avec isLoading pour déclencher StreamingMarkdown
+    // Créer un message temporaire avec streaming
     const tempEditedMessage = {
       uid: uid,
       prompt: t,
-      response: '', // Commence avec une réponse vide pour le streaming
-      isLoading: true, // Ceci déclenche le mode streaming dans StreamingMarkdown
+      response: '',
+      isLoading: true,
       created_at: new Date().toISOString(),
     };
     
-    // Remplacer le message existant par la version en cours d'édition
     setCurrentMessages(prev => prev.map(msg => 
       msg.uid === uid ? tempEditedMessage : msg
     ));
@@ -420,11 +515,10 @@ const App = () => {
             const data = line.substring(6);
             
             if (data === '[DONE]') {
-              // Marquer comme terminé pour arrêter l'animation de streaming
               setCurrentMessages(prev =>
                 prev.map(msg =>
                   msg.uid === uid
-                    ? { ...msg, isLoading: false } // Arrêter le mode streaming
+                    ? { ...msg, isLoading: false }
                     : msg
                 )
               );
@@ -434,14 +528,13 @@ const App = () => {
             
             if (data.trim() && !data.startsWith('[ERROR]')) {
               chunkCount++;
-              //  Accumuler la réponse tout en gardant isLoading=true
               setCurrentMessages(prev =>
                 prev.map(msg =>
                   msg.uid === uid
                     ? { 
                         ...msg, 
                         response: (msg.response || '') + data,
-                        isLoading: true // Garder le mode streaming actif
+                        isLoading: true
                       }
                     : msg
                 )
@@ -451,7 +544,7 @@ const App = () => {
             
             if (data.startsWith('[ERROR]')) {
               setLogs(prev => [...prev, `ERROR: ${data}`]);
-              throw new Error(data.substring(7)); // Enlève '[ERROR] '
+              throw new Error(data.substring(7));
             }
           }
         }
@@ -460,9 +553,9 @@ const App = () => {
           break;
         }
       }
-      // Une fois le stream terminé, on rafraîchit les données pour obtenir la version finale et stylisée
+      
+      // Rafraîchir les données pour obtenir la version finale
       await fetchConversationData(activeConversation.uid);
-
       showSnackbar({ message: "Message modifié avec succès.", type: 'success' }); 
       handleCancelEdit();
       
@@ -477,71 +570,30 @@ const App = () => {
       setLogs(prev => [...prev, `INFO: Nettoyage édition terminé`]);
     }
   }, [activeConversation?.uid, showSnackbar, isEditingMessage, isSendingMessage, isCreatingConversation, handleCancelEdit, fetchConversationData]);
+  
 
-  const handleFileSubmitForContextHub = useCallback(async (files) => {
-    if (!activeConversation?.uid) {
-      showSnackbar({ message: "Sélectionnez conversation.", type: 'info' });
-      return;
-    }
-    if (isUploading) return;
-    setIsUploading(true);
-    showSnackbar({ message: `Téléversement ${files.length} fichier(s)...`, type: 'info' });
-    const fd = new FormData();
-    files.forEach(f => fd.append('files', f));
+  const handleDeleteDocumentFromContext = useCallback(async (docUid) => {
+    if (!activeConversation?.uid || !docUid) return;
+    setDeletingDocumentId(docUid);
     try {
-      console.log("Sending upload request for files:", files.map(f => f.name));
-      const r = await fetchWithAuth(`/api/v1/conversations/${activeConversation.uid}/upload`, {
-        method: 'POST',
-        body: fd
+      await fetchWithAuth(`/api/v1/conversations/${activeConversation.uid}/documents/${docUid}`, { 
+        method: 'DELETE' 
       });
-      console.log("Upload response:", r);
-      let sm = r?.message || `${r?.documents?.length || 0} traité(s).`;
-      let wm = r?.errors?.length ? `${r.errors.length} erreur(s).` : "";
-      showSnackbar({ message: `${sm} ${wm}`.trim(), type: wm ? 'warning' : 'success', duration: 7000 });
+      showSnackbar({ message: "Document supprimé.", type: 'success' });
       await fetchConversationData(activeConversation.uid);
     } catch (e) {
-      console.error("Error in handleFileSubmitForContextHub:", e);
-      showSnackbar({ message: `Erreur: ${e.data?.detail || e.message}`, type: 'error' });
+      showSnackbar({ 
+        message: `Erreur suppression: ${e.data?.detail || e.message}`, 
+        type: 'error' 
+      });
     } finally {
-      console.log("Upload complete, resetting isUploading");
-      setIsUploading(false);
-    }
-  }, [activeConversation?.uid, isUploading, showSnackbar, fetchConversationData]);
-
-  const handleFileUploadForPromptField = useCallback((files) => {
-    try {
-      if (!activeConversation?.uid) {
-        showSnackbar({ message: "Sélectionnez conversation.", type: 'info' });
-        if (!isContextHubOpen) toggleContextHub();
-        return;
-      }
-      const fileArray = Array.from(files); // Convertir FileList en tableau
-      console.log("Uploading files from PromptField:", fileArray);
-      handleFileSubmitForContextHub(fileArray);
-    } catch (e) {
-      console.error("Error in handleFileUploadForPromptField:", e);
-      showSnackbar({ message: `Erreur d'upload: ${e.message}`, type: 'error' });
-      setIsUploading(false); // Réinitialiser l'état en cas d'erreur
-    }
-  }, [activeConversation?.uid, handleFileSubmitForContextHub, showSnackbar, isContextHubOpen, toggleContextHub]);
-
-  const handleDeleteDocumentFromContext = useCallback(async (docUid) => { 
-    if (!activeConversation?.uid || !docUid) return; 
-    setDeletingDocumentId(docUid); 
-    try { 
-      await fetchWithAuth(`/api/v1/conversations/${activeConversation.uid}/documents/${docUid}`, { method: 'DELETE' }); 
-      showSnackbar({ message: "Document supprimé.", type: 'success' }); 
-      await fetchConversationData(activeConversation.uid); 
-    } catch (e) { 
-      showSnackbar({ message: `Erreur suppression: ${e.data?.detail||e.message}`, type: 'error' }); 
-    } finally { 
-      setDeletingDocumentId(null); 
+      setDeletingDocumentId(null);
     }
   }, [activeConversation?.uid, showSnackbar, fetchConversationData]);
-
+  
   const handleToggleDocumentActiveState = useCallback(async (documentUid) => {
     if (!activeConversation?.uid) return;
-
+  
     const originalDocuments = documentsInContext;
     const newDocuments = documentsInContext.map(doc => {
       if (doc.uid === documentUid) {
@@ -550,10 +602,10 @@ const App = () => {
       return doc;
     });
     setDocumentsInContext(newDocuments);
-
+  
     const docToUpdate = newDocuments.find(d => d.uid === documentUid);
     const newActiveState = docToUpdate.isActiveInContext;
-
+  
     try {
       await fetchWithAuth(
         `/api/v1/conversations/${activeConversation.uid}/documents/${documentUid}/toggle-active?is_active=${newActiveState}`,
@@ -563,6 +615,7 @@ const App = () => {
         message: `Document "${docToUpdate.filename.substring(0, 20)}..." ${newActiveState ? 'activé' : 'désactivé'}.`,
         type: 'success'
       });
+      
     } catch (error) {
       showSnackbar({
         message: `Erreur lors de la mise à jour du document.`,
@@ -571,8 +624,8 @@ const App = () => {
       setDocumentsInContext(originalDocuments);
       console.error("Failed to toggle document active state:", error);
     }
-  }, [activeConversation?.uid, documentsInContext, showSnackbar, fetchWithAuth]);
-
+  }, [activeConversation?.uid, documentsInContext, showSnackbar]);
+  
   const handlePreviewDocument = useCallback(async (doc) => {
     setIsPreviewModalOpen(true);
     const fullDoc = documentsInContext.find(d => d.uid === doc.uid) || doc;
@@ -585,10 +638,12 @@ const App = () => {
       error: null 
     });
     setIsPreviewLoading(true);
-
+  
     if (fullDoc.mime_type?.includes('pdf')) {
       try {
-        if (!activeConversation?.uid || !fullDoc.uid) throw new Error("ID de conversation ou de document manquant pour l'aperçu PDF.");
+        if (!activeConversation?.uid || !fullDoc.uid) {
+          throw new Error("ID de conversation ou de document manquant pour l'aperçu PDF.");
+        }
         const rawResp = await fetch(`http://localhost:8000/api/v1/conversations/${activeConversation.uid}/documents/${fullDoc.uid}/download`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem("awesomeLeadsToken")}` }
         });
@@ -603,7 +658,9 @@ const App = () => {
       }
     } else if (fullDoc.mime_type?.startsWith('text/')) {
       try {
-        if (!activeConversation?.uid || !fullDoc.uid) throw new Error("ID de conversation ou de document manquant pour l'aperçu texte.");
+        if (!activeConversation?.uid || !fullDoc.uid) {
+          throw new Error("ID de conversation ou de document manquant pour l'aperçu texte.");
+        }
         const response = await fetch(`http://localhost:8000/api/v1/conversations/${activeConversation.uid}/documents/${fullDoc.uid}/download`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem("awesomeLeadsToken")}` }
         });
@@ -612,13 +669,19 @@ const App = () => {
         setDocumentToPreview(prev => ({ ...prev, previewContent: textContent || "Le contenu est vide." }));
       } catch (e) {
         showSnackbar({ message: `Erreur de prévisualisation TXT: ${e.message}`, type: 'error' });
-        setDocumentToPreview(prev => ({ ...prev, error: "Aperçu du fichier texte impossible.", previewContent: "Contenu non disponible." }));
+        setDocumentToPreview(prev => ({ 
+          ...prev, 
+          error: "Aperçu du fichier texte impossible.", 
+          previewContent: "Contenu non disponible." 
+        }));
       } finally {
         setIsPreviewLoading(false);
       }
     } else if (fullDoc.mime_type?.startsWith('image/')) { 
       try {
-        if (!activeConversation?.uid || !fullDoc.uid) throw new Error("ID de conversation ou de document manquant pour l'aperçu image.");
+        if (!activeConversation?.uid || !fullDoc.uid) {
+          throw new Error("ID de conversation ou de document manquant pour l'aperçu image.");
+        }
         const rawResp = await fetch(`http://localhost:8000/api/v1/conversations/${activeConversation.uid}/documents/${fullDoc.uid}/download`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem("awesomeLeadsToken")}` }
         });
@@ -632,7 +695,10 @@ const App = () => {
         setIsPreviewLoading(false);
       }
     } else {
-      setDocumentToPreview(prev => ({ ...prev, error: `Aperçu non disponible pour ce type de fichier (${fullDoc.mime_type || 'inconnu'}).` }));
+      setDocumentToPreview(prev => ({ 
+        ...prev, 
+        error: `Aperçu non disponible pour ce type de fichier (${fullDoc.mime_type || 'inconnu'}).` 
+      }));
       setIsPreviewLoading(false);
     }
   }, [activeConversation?.uid, showSnackbar, documentsInContext]);
@@ -645,20 +711,86 @@ const App = () => {
     setDocumentToPreview(null); 
     setIsPreviewLoading(false); 
   }, [documentToPreview]); 
-
+  
   const handleToggleActiveFromPreview = useCallback(() => { 
     if (!documentToPreview?.uid) return; 
-    const docBefore = documentsInContext.find(d=>d.uid === documentToPreview.uid); 
-    const futureActive = !(docBefore?.isActiveInContext||false); 
+    const docBefore = documentsInContext.find(d => d.uid === documentToPreview.uid); 
+    const futureActive = !(docBefore?.isActiveInContext || false); 
     handleToggleDocumentActiveState(documentToPreview.uid); 
-    showSnackbar({ message: `Doc "${documentToPreview.name}" ${futureActive ? 'activé' : 'désactivé'}.`, type: 'success'}); 
+    showSnackbar({ 
+      message: `Doc "${documentToPreview.name}" ${futureActive ? 'activé' : 'désactivé'}.`, 
+      type: 'success'
+    }); 
     handleClosePreview();
   }, [documentToPreview, documentsInContext, handleToggleDocumentActiveState, showSnackbar, handleClosePreview]);
-
+  
+  const handleFilesAdded = useCallback(async (files) => {
+    // La vérification de la conversation active reste une bonne idée pour s'assurer que l'UI est dans un état cohérent.
+    if (!activeConversation?.uid || !files.length) {
+      showSnackbar({ message: "Veuillez sélectionner une conversation pour activer le contexte d'upload.", type: 'info' });
+      return;
+    }
+  
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      files.forEach(file => formData.append('files', file));
+  
+      // On cible la route admin pour ajouter un document à la bibliothèque de l'utilisateur (ici, l'admin lui-même).
+      // Nous récupérons `user.uid` depuis le hook `useLoaderData`.
+      const apiUrl = `http://localhost:8000/api/v1/admin/users/${user.uid}/upload`;
+  
+      const response = await fetch(apiUrl, { // Utilisation de la nouvelle URL
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem("awesomeLeadsToken")}`
+        },
+        body: formData
+      });
+  
+      const result = await response.json(); // La route admin renvoie un objet { documents: [], errors: [] }
+  
+      if (!response.ok) {
+        // Gérer les erreurs venant du backend (ex: utilisateur non trouvé, etc.)
+        throw new Error(result.detail || 'Erreur lors de l\'upload');
+      }
+  
+      // La réponse contient une clé "documents". On vérifie sa présence et sa longueur.
+      const uploadedDocs = result.documents || [];
+      const uploadErrors = result.errors || [];
+  
+      if (uploadErrors.length > 0) {
+          showSnackbar({
+              message: `Upload partiel : ${uploadErrors.length} fichier(s) en erreur.`,
+              type: 'warning'
+          });
+      }
+  
+      if (uploadedDocs.length > 0) {
+          showSnackbar({ 
+              message: `${uploadedDocs.length} document(s) ajouté(s) à votre bibliothèque.`, 
+              type: 'success' 
+          });
+      }
+  
+      // Rafraîchir les documents de la conversation active pour voir le nouveau document apparaître.
+      await fetchConversationData(activeConversation.uid);
+  
+    } catch (error) {
+      console.error("Erreur upload:", error);
+      showSnackbar({ 
+        message: `Erreur upload: ${error.message}`, 
+        type: 'error' 
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  }, [activeConversation?.uid, user?.uid, showSnackbar, fetchConversationData]);
+  
   const contextHubMarginClass = isContextHubOpen && window.innerWidth >= 1024
     ? language === 'ar' ? 'lg:ml-[360px]' : 'lg:mr-[360px]'
     : '';
-
+  
   let mainContent;
   if (activeConversation && isLoadingData && currentMessages.length === 0) { 
     mainContent = ( 
@@ -675,7 +807,6 @@ const App = () => {
         )} 
         {currentMessages.map((msg, index) => (
           <React.Fragment key={msg.uid || `msg-${index}`}>
-            {/* PROMPT - reste en texte brut */}
             {msg.prompt && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }} 
@@ -685,13 +816,15 @@ const App = () => {
               > 
                 <div className={`bg-light-surface dark:bg-dark-surfaceContainer p-3 rounded-lg shadow-sm max-w-[85%] ${editingMessageId === msg.uid ? 'w-full border-2 border-light-primary/50 dark:border-dark-primary/50 ring-2 ring-light-primary/30 dark:ring-dark-primary/30' : ''}`}> 
                   {editingMessageId === msg.uid ? ( 
-                    // Votre logique d'édition ...
                     <div className="flex flex-col gap-2">
                       <textarea 
                         ref={editInputRef} 
                         value={editText} 
                         onChange={(e) => setEditText(e.target.value)} 
-                        onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }} 
+                        onInput={(e) => { 
+                          e.target.style.height = 'auto'; 
+                          e.target.style.height = `${e.target.scrollHeight}px`; 
+                        }} 
                         onKeyDown={(e) => { 
                           if (e.key === 'Enter' && !e.shiftKey) { 
                             e.preventDefault(); 
@@ -705,17 +838,23 @@ const App = () => {
                         rows={1} 
                       /> 
                       <div className="flex justify-end items-center gap-2 mt-1 h-8"> 
-                        {isEditingMessage ? <CircularProgress size="small" /> : ( 
+                        {isEditingMessage ? (
+                          <CircularProgress size="small" />
+                        ) : ( 
                           <> 
                             <button 
                               onClick={() => handleSaveEdit(msg.uid, editText)} 
                               className="px-3 py-1 text-sm rounded bg-light-primary text-light-onPrimary dark:bg-dark-primary dark:text-dark-onPrimary hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-medium" 
                               disabled={!editText.trim()}
-                            >Sauvegarder</button> 
+                            >
+                              Sauvegarder
+                            </button> 
                             <button 
                               onClick={handleCancelEdit} 
                               className="px-3 py-1 text-sm rounded bg-light-secondaryContainer text-light-onSecondaryContainer dark:bg-dark-secondaryContainer dark:text-dark-onSecondaryContainer hover:opacity-90 font-medium"
-                            >Annuler</button> 
+                            >
+                              Annuler
+                            </button> 
                           </> 
                         )} 
                       </div> 
@@ -726,7 +865,6 @@ const App = () => {
                     </p>
                   )} 
                 </div> 
-                {/* Bouton d'édition ... */}
                 {editingMessageId !== msg.uid && index === currentMessages.length - 1 && msg.prompt && !msg.isLoading && ( 
                   <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"> 
                     <IconBtn 
@@ -740,8 +878,7 @@ const App = () => {
                 )} 
               </motion.div>
             )}
-
-            {/* RÉPONSE - utilisez StreamingMarkdown pour TOUS les cas */}
+  
             {msg.response !== null && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }} 
@@ -750,7 +887,6 @@ const App = () => {
                 className="flex items-start justify-end"
               > 
                 <div className='bg-light-secondaryContainer dark:bg-dark-secondaryContainer p-3 rounded-lg shadow-sm max-w-[85%]'> 
-                  {/*  StreamingMarkdown gère automatiquement le formatage pendant l'édition aussi */}
                   <StreamingMarkdown 
                     content={msg.response || ''} 
                     isStreaming={msg.isLoading || false}
@@ -759,8 +895,6 @@ const App = () => {
                 </div> 
               </motion.div>
             )}
-
-            
           </React.Fragment>
         ))} 
         <div ref={messagesEndRef} style={{ height: '1px' }} /> 
@@ -769,12 +903,13 @@ const App = () => {
   } else { 
     mainContent = <Greetings user={user} />; 
   }
-
+  
   return (
     <>
       <PageTitle title={activeConversation ? activeConversation.title : 'ChatBot Fiqh Maliki'} />
       <div className='lg:grid lg:grid-cols-[320px,1fr] h-dvh overflow-hidden relative'>
         <Sidebar
+          user={user}
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
           conversations={allConversations}
@@ -806,8 +941,6 @@ const App = () => {
                 onSubmit={handleSendMessage}
                 isLoading={isSendingMessage || isCreatingConversation}
                 isDisabled={isLoadingData || !!editingMessageId || !!renamingConvId}
-                onUpload={handleFileUploadForPromptField}
-                isUploading={isUploading}
               />
               <motion.p
                 initial={{ opacity: 0 }}
@@ -821,15 +954,15 @@ const App = () => {
             </div>
           </div>
         </div>
-
+  
         <ContextHubPanel
           isOpen={isContextHubOpen}
           onClose={toggleContextHub}
           title={activeConversation ? `Docs: ${activeConversation.title.substring(0,20)}${activeConversation.title.length > 20 ? '...' : ''}` : "Context Hub"}
-          currentContextSize={currentContextSize}
-          maxContextSize={maxContextSize}
-          onFilesAdded={handleFileSubmitForContextHub}
-          isUploading={isUploading}
+          currentContextSize={user?.role === 'admin' ? currentContextSize : undefined}
+          maxContextSize={user?.role === 'admin' ? maxContextSize : undefined}
+          onFilesAdded={user?.role === 'admin' ? handleFilesAdded : undefined}
+          isUploading={user?.role === 'admin' ? isUploading : false}
           activeConversationId={activeConversation?.uid}
           documents={documentsInContext}
           onDeleteDocument={handleDeleteDocumentFromContext}
@@ -837,8 +970,9 @@ const App = () => {
           deletingDocumentId={deletingDocumentId}
           isLoading={isLoadingData}
           onToggleDocumentActive={handleToggleDocumentActiveState}
+          userRole={user?.role}
         />
-
+  
         {isPreviewModalOpen && documentToPreview && (
           <DocumentPreview
             document={documentToPreview}
@@ -847,13 +981,12 @@ const App = () => {
             onAdd={handleToggleActiveFromPreview}
           />
         )}
-
+  
         {isContextHubOpen && window.innerWidth < 1024 && (
           <div className="fixed inset-0 bg-black/40 z-30" onClick={toggleContextHub}></div>
         )}
       </div>
     </>
   );
-};
-
+}
 export default App;

@@ -1,13 +1,16 @@
+// src/hooks/useToggle.js
 
 import { useState, useCallback } from "react";
 
-const useToggle = () => {
-    const [isOpen, setToggle] = useState(false);
+// Accepte une valeur initiale (ex: true ou false)
+const useToggle = (initialState = false) => {
+    const [isOpen, setToggle] = useState(initialState);
+    
     const toggle = useCallback(() => { 
         setToggle((prev) => !prev);
     }, []);
 
-    return [isOpen, toggle]
-
+    return [isOpen, toggle];
 };
-export {useToggle };
+
+export { useToggle };

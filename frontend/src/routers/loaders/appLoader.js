@@ -1,13 +1,24 @@
 import { redirect } from 'react-router-dom';
-import { fetchWithAuth } from '../../utils/fetchWithAuth'; // Helper for authenticated fetches
+import { fetchWithAuth } from '../../utils/fetchWithAuth';
 
-const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour accéder à l'URL
+// Cette fonction lit simplement les données utilisateur du localStorage.
+export const getUserFromLocalStorage = () => {
+  const storedUser = localStorage.getItem('user');
+  if (!storedUser) return null;
+  try {
+    return JSON.parse(storedUser);
+  } catch (e) {
+    console.error("Failed to parse user from localStorage", e);
+    return null;
+  }
+};
+
+const appLoader = async ({ request }) => { 
   console.log("AppLoader: Starting data fetch...");
 
-  // <-- AJOUT : Récupérer les paramètres d'URL -->
+  // Récupérer les paramètres d'URL
   const url = new URL(request.url);
   const fromLogin = url.searchParams.get('fromLogin') === 'true';
-  // <-- FIN AJOUT -->
 
   const token = localStorage.getItem("awesomeLeadsToken");
   if (!token) {
@@ -30,6 +41,10 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
     }
     console.log("AppLoader: User data fetched:", user.email);
 
+    // Stocker l'utilisateur dans le localStorage
+    // Cela garantit que getUserFromLocalStorage() aura toujours des données fraîches.
+    localStorage.setItem('user', JSON.stringify(user));
+
     // 2. Fetch conversations
     console.log("AppLoader: Fetching conversations...");
     conversations = await fetchWithAuth("/api/v1/conversations/");
@@ -37,7 +52,6 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
     console.log(`AppLoader: Found ${conversations.length} conversations.`);
 
     // 3. Fetch messages for the most recent conversation CONDITIONALLY
-  
     if (conversations.length > 0 && !fromLogin) { // Ne charge les messages que si on ne vient PAS du login
       const latestConversationUid = conversations[0].uid;
       console.log(`AppLoader: Fetching messages for latest conversation ${latestConversationUid}...`);
@@ -66,6 +80,8 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
         first_name: user.first_name,
         username: user.username,
         email: user.email,
+        last_name: user.last_name,
+        role: user.role // Ajout du rôle pour les vérifications d'admin
       },
       conversations,
       initialMessages // Sera un tableau vide si fromLogin=true ou si pas de conversations/erreur
@@ -78,6 +94,7 @@ const appLoader = async ({ request }) => { // <-- Ajout de { request } ici pour 
     console.error("AppLoader critical error:", error);
     localStorage.removeItem("awesomeLeadsToken");
     localStorage.removeItem("awesomeLeadsRefreshToken");
+    localStorage.removeItem("user"); // ✅ Nettoyer aussi l'utilisateur en cas d'erreur
     return redirect('/login'); // Redirection de sécurité en cas d'erreur grave
   }
 };

@@ -13,8 +13,9 @@ Voici un aperçu de la structure des dossiers clés au sein de `Code_Source/back
 
 ## Description des Dossiers Clés
 
+* **`admin/`** : Contient les routes et fonctionnalités exclusives aux administrateurs, notamment la gestion des utilisateurs (création, suppression, modification de rôles) et le téléversement de documents pour des utilisateurs spécifiques. Les administrateurs sont les seuls autorisés à uploader des documents dans le système.
 * **`auth/`** : Contient toute la logique relative à l'authentification des utilisateurs, y compris la création de compte, la connexion, la vérification par email, la réinitialisation de mot de passe, et la gestion des tokens JWT.
-* **`conversations/`** : Gère les fonctionnalités de base de l'application de chat, telles que la création et la récupération de conversations, l'ajout de messages, le téléversement et la gestion des documents associés à une conversation, et l'obtention des réponses du système RAG.
+* **`conversations/`** : Gère les fonctionnalités de base de l'application de chat, telles que la création et la récupération de conversations, l'ajout de messages, et l'obtention des réponses du système RAG. Les documents sont désormais uniquement gérés par les administrateurs via le module `admin/`.
 * **`db/`** : Centralise la configuration et l'interaction avec la base de données relationnelle (PostgreSQL via SQLModel) pour le stockage des données persistantes et avec Redis pour le caching ou la gestion de listes de blocage.
 * **`rag/`** : Regroupe tous les composants spécifiques à la logique RAG (Retrieval Augmented Generation). Cela inclut le chargement et le traitement des documents, la création et la gestion de la base de données vectorielle (ChromaDB), et l'orchestration de la chaîne de questions-réponses avec le LLM (Google Gemini).
 * **`tests/`** : Contient les scripts de test pour assurer la fiabilité et le bon fonctionnement des différents modules du backend.
@@ -25,6 +26,15 @@ Voici un aperçu de la structure des dossiers clés au sein de `Code_Source/back
     * `mail.py` : Configure le service d'envoi d'emails utilisé pour la vérification des comptes et la réinitialisation des mots de passe.
     * `middleware.py` : Enregistre les middlewares FastAPI, comme celui pour la gestion des requêtes CORS ou le logging.
 
+## Architecture de Gestion des Documents
+
+Dans cette architecture, la gestion des documents suit un modèle centralisé :
+
+* **Téléversement** : Seuls les administrateurs peuvent téléverser des documents via les routes du module `admin/`
+* **Attribution** : Lors du téléversement, l'administrateur spécifie à quel utilisateur le document sera attribué
+* **Propriété** : Une fois attribué, le document appartient à l'utilisateur spécifié et peut être utilisé dans ses conversations
+* **Accès** : Les utilisateurs peuvent consulter et utiliser leurs documents attribués, mais ne peuvent pas en ajouter de nouveaux
+
 ## Fichiers Importants Hors `src/`
 
 * **`alembic.ini`** : Fichier de configuration pour Alembic, l'outil de migration de base de données utilisé avec SQLAlchemy/SQLModel.
@@ -32,7 +42,7 @@ Voici un aperçu de la structure des dossiers clés au sein de `Code_Source/back
 * **`requirements.txt`** : Liste toutes les dépendances Python du projet backend.
 * **`monstockage_backup_2025-04-20.sql`** : Un exemple de sauvegarde de la base de données PostgreSQL, utile pour comprendre le schéma attendu ou pour restaurer un état.
 
-Cette structure modulaire vise à faciliter le développement, les tests et la maintenance de l'application backend.
+Cette structure modulaire vise à faciliter le développement, les tests et la maintenance de l'application backend, tout en garantissant un contrôle administratif sur la gestion des documents.
 
 ---
 

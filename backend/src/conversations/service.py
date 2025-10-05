@@ -13,7 +13,7 @@ from sqlmodel import desc, select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from src.db.models import Conversation, Message, User, Document
+from src.db.models import Conversation, Message, User, Document, ConversationDocumentLink
 
 from src.errors import ConversationNotFound, ForbiddenAccess, MessageNotFound, DocumentNotFound
 from .schemas import ConversationRenameModel, DocumentModel
@@ -74,11 +74,39 @@ class ConversationService:
         session: AsyncSession,
         title: Optional[str] = None
     ) -> Conversation:
-        """CrÃ©e une nouvelle conversation pour un utilisateur."""
+        """Crée une nouvelle conversation pour un utilisateur et active tous les documents de sa bibliothèque."""
         if not title:
              title = f"Nouvelle discussion {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+        
+        # Création de la conversation
         new_conversation = Conversation(title=title, user_uid=user.uid, user=user)
         session.add(new_conversation)
+        await session.flush() # Pour obtenir l'UID de la nouvelle conversation
+
+        # ---  Activer tous les documents de l'utilisateur pour cette nouvelle conversation ---
+        try:
+            user_docs_stmt = select(Document).where(Document.user_uid == user.uid)
+            user_docs_result = await session.exec(user_docs_stmt)
+            user_documents = user_docs_result.all()
+
+            new_links = []
+            for doc in user_documents:
+                link = ConversationDocumentLink(
+                    conversation_uid=new_conversation.uid,
+                    document_uid=doc.uid,
+                    is_active=True # Actif par défaut
+                )
+                new_links.append(link)
+            
+            if new_links:
+                session.add_all(new_links)
+            
+            logger.info(f"Activé {len(new_links)} documents existants pour la nouvelle conversation {new_conversation.uid}")
+
+        except Exception as e:
+            logger.error(f"Erreur lors de l'activation des documents pour la nouvelle conversation: {e}", exc_info=True)
+            # On ne bloque pas la création de la conversation, mais on log l'erreur
+        
         await session.commit()
         await session.refresh(new_conversation)
         logger.info(f"Created conversation {new_conversation.uid} for user {user.uid}")
@@ -104,26 +132,29 @@ class ConversationService:
         session: AsyncSession
     ) -> List[str]:
         """
-        RÃ©cupÃ¨re les UIDs des documents actifs pour une conversation.
-        CRITIQUE pour la sÃ©curitÃ© : seuls les documents actifs de cette conversation sont utilisÃ©s dans le RAG.
+        Récupère les UIDs des documents qui sont explicitement actifs
+        pour une conversation via la table de liaison.
         """
-        logger.info(f"RÃ©cupÃ©ration des documents actifs pour la conversation {conversation_uid}")
+        logger.info(f"Récupération des documents actifs pour la conversation {conversation_uid}")
         
         try:
-            statement = select(Document).where(
-                Document.conversation_uid == conversation_uid,
-                Document.is_active == True
+            # Jointure entre Document et ConversationDocumentLink
+            statement = (
+                select(Document.uid)
+                .join(ConversationDocumentLink, Document.uid == ConversationDocumentLink.document_uid)
+                .where(
+                    ConversationDocumentLink.conversation_uid == conversation_uid,
+                    ConversationDocumentLink.is_active == True
+                )
             )
             result = await session.exec(statement)
-            active_documents = result.all()
+            active_uids = [str(uid) for uid in result.all()]
             
-            active_uids = [str(doc.uid) for doc in active_documents]
-            logger.info(f"TrouvÃ© {len(active_uids)} documents actifs pour la conversation {conversation_uid}")
-            
+            logger.info(f"Trouvé {len(active_uids)} documents actifs pour la conversation {conversation_uid}")
             return active_uids
             
         except Exception as e:
-            logger.error(f"Erreur lors de la rÃ©cupÃ©ration des documents actifs: {e}", exc_info=True)
+            logger.error(f"Erreur lors de la récupération des documents actifs: {e}", exc_info=True)
             return []
     
     async def generate_rag_response(
@@ -138,44 +169,44 @@ class ConversationService:
         """
         logger.info(f"GÃ©nÃ©ration de rÃ©ponse RAG sÃ©curisÃ©e pour la conversation {conversation_uid}")
         try:
-            # RÃ©cupÃ©ration de l'historique de conversation
+            # Recupération de l'historique de conversation
             chat_history = await self.get_formatted_history(conversation_uid, session)
             
-            # SÃ©curitÃ© : uniquement les documents actifs de cette conversation
+            # Sécurité : uniquement les documents actifs de cette conversation
             active_document_uids = await self.get_active_document_uids(conversation_uid, session)
             
-            # GÃ©nÃ©ration de la rÃ©ponse avec contexte sÃ©curisÃ©
+            # Gérération de la réponse avec contexte sécurisé
             ai_response_text, source_documents, doc_count = await generate_contextual_rag_response(
                 question=prompt,
                 active_document_uids=active_document_uids,
                 chat_history=chat_history
             )
             
-            logger.info(f"RÃ©ponse gÃ©nÃ©rÃ©e avec {doc_count} documents actifs")
+            logger.info(f"réponse générée avec {doc_count} documents actifs")
             
             if source_documents:
-                logger.info(f"Sources utilisÃ©es dans la rÃ©ponse: {len(source_documents)} documents")
+                logger.info(f"Sources utilisées dans la réponse: {len(source_documents)} documents")
             
             return ai_response_text, source_documents
             
         except Exception as e:
-            logger.error(f"Erreur lors de la gÃ©nÃ©ration de la rÃ©ponse RAG: {e}", exc_info=True)
-            return "DÃ©solÃ©, je n'ai pas pu traiter votre demande en raison d'une erreur interne.", None
+            logger.error(f"Erreur lors de la génération de la réponse RAG: {e}", exc_info=True)
+            return "Désolé, je n'ai pas pu traiter votre demande en raison d'une erreur interne.", None
 
     async def save_message_pair(
          self, *, conversation_uid: uuid.UUID, user_uid: uuid.UUID, 
          prompt: str, response: str, session: AsyncSession
      ) -> Message:
-         """Sauvegarde une paire prompt/rÃ©ponse dans la base de donnÃ©es."""
-         logger.info(f"Sauvegarde du prompt et de la rÃ©ponse RAG pour la conversation {conversation_uid}")
+         """Sauvegarde une paire prompt/réponse dans la base de données."""
+         logger.info(f"Sauvegarde du prompt et de la réponse RAG pour la conversation {conversation_uid}")
          conversation = await self.get_conversation_by_uid(conversation_uid, session)
          if not conversation:
-             logger.error(f"Conversation {conversation_uid} non trouvÃ©e.")
-             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation non trouvÃ©e lors de la sauvegarde.")
+             logger.error(f"Conversation {conversation_uid} non trouvée.")
+             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation non trouvée lors de la sauvegarde.")
          user = await session.get(User, user_uid)
          if not user:
-              logger.error(f"Utilisateur {user_uid} non trouvÃ©.")
-              raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvÃ© lors de la sauvegarde.")
+              logger.error(f"Utilisateur {user_uid} non trouvée.")
+              raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur non trouvée lors de la sauvegarde.")
          db_message = Message(
              conversation_uid=conversation_uid, user_uid=user_uid,
              prompt=prompt, response=response,
@@ -186,7 +217,7 @@ class ConversationService:
          session.add(conversation)
          await session.commit()
          await session.refresh(db_message)
-         logger.info(f"Paire message/rÃ©ponse (ID: {db_message.uid}) sauvegardÃ©e pour la conversation {conversation_uid}")
+         logger.info(f"Paire message/réponse (ID: {db_message.uid}) sauvegardée pour la conversation {conversation_uid}")
          return db_message
 
     async def add_message_to_conversation(
@@ -194,12 +225,12 @@ class ConversationService:
         prompt_text: str, session: AsyncSession,
     ) -> Message:
         """
-        Ajoute un nouveau message Ã  une conversation avec gÃ©nÃ©ration automatique de rÃ©ponse RAG.
-        VÃ©rifie les permissions utilisateur avant traitement.
+        Ajoute un nouveau message Ã  une conversation avec gÃ©nÃ©ration automatique de réponse RAG.
+        Vérifie les permissions utilisateur avant traitement.
         """
         conversation = await self.get_user_conversation(user.uid, conversation_uid, session)
         if not conversation:
-            raise ConversationNotFound("Conversation non trouvÃ©e ou accÃ¨s interdit.")
+            raise ConversationNotFound("Conversation non trouvée ou accès interdit.")
         
         try:
             ai_response_text, _ = await self.generate_rag_response(
@@ -225,10 +256,10 @@ class ConversationService:
     async def get_conversation_messages(
         self, conversation_uid: uuid.UUID, user_uid: uuid.UUID, session: AsyncSession
     ) -> List[Message]:
-        """RÃ©cupÃ¨re tous les messages d'une conversation pour un utilisateur autorisÃ©."""
+        """Récupére tous les messages d'une conversation pour un utilisateur autorisées."""
         conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
         if not conversation:
-            raise ConversationNotFound("Conversation non trouvÃ©e ou accÃ¨s interdit.")
+            raise ConversationNotFound("Conversation non trouvée ou accès interdit.")
         statement = (
             select(Message).where(Message.conversation_uid == conversation_uid).order_by(Message.created_at)
         )
@@ -238,17 +269,17 @@ class ConversationService:
     async def delete_conversation(
         self, conversation_uid: uuid.UUID, user_uid: uuid.UUID, session: AsyncSession
     ) -> None:
-        """Supprime une conversation et tous ses messages associÃ©s."""
+        """Supprime une conversation et tous ses messages associés."""
         conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
         if not conversation:
-            raise ConversationNotFound("Conversation non trouvÃ©e ou accÃ¨s interdit pour suppression.")
+            raise ConversationNotFound("Conversation non trouvée ou accès interdit pour suppression.")
         await session.delete(conversation)
         await session.commit()
         logger.info(f"Deleted conversation {conversation_uid} for user {user_uid}")
         return None
     
     async def get_message_by_uid(self, message_uid: uuid.UUID, session: AsyncSession) -> Optional[Message]:
-         """RÃ©cupÃ¨re un message par son UID."""
+         """récupère un message par son UID."""
          result = await session.exec(select(Message).where(Message.uid == message_uid))
          return result.first()
 
@@ -257,21 +288,21 @@ class ConversationService:
         user_uid: uuid.UUID, new_prompt_text: str, session: AsyncSession,
     ) -> List[Message]:
         """
-        Modifie un message et rÃ©gÃ©nÃ¨re la rÃ©ponse ainsi que tous les messages suivants.
-        Maintient la cohÃ©rence de l'historique en supprimant les messages ultÃ©rieurs.
+        Modifie un message et récupère la réponse ainsi que tous les messages suivants.
+        Maintient la cohérence de l'historique en supprimant les messages ultérieurs.
         """
         conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
         if not conversation: 
-            raise ConversationNotFound("Conversation non trouvÃ©e ou accÃ¨s interdit.")
+            raise ConversationNotFound("Conversation non trouvée ou accès interdit.")
         message_to_edit = await self.get_message_by_uid(message_to_edit_uid, session)
         if not message_to_edit or message_to_edit.conversation_uid != conversation_uid or message_to_edit.user_uid != user_uid:
-            raise MessageNotFound("Message non trouvÃ© ou accÃ¨s interdit.")
+            raise MessageNotFound("Message non trouvé ou accÃ¨s interdit.")
         if not message_to_edit.prompt:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de modifier une rÃ©ponse AI.")
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de modifier une réponse AI.")
         
         edit_message_timestamp = message_to_edit.created_at
         try:
-            # Suppression des messages ultÃ©rieurs pour maintenir la cohÃ©rence
+            # Suppression des messages ultérieurs pour maintenir la cohérence
             await session.exec(delete(Message).where(
                 Message.conversation_uid == conversation_uid, Message.created_at > edit_message_timestamp
             ))
@@ -280,7 +311,7 @@ class ConversationService:
             )
             formatted_history = [(msg.prompt, msg.response) for msg in history_messages_result.all() if msg.prompt and msg.response]
             
-            # RÃ©gÃ©nÃ©ration avec le nouveau prompt
+            # Régération avec le nouveau prompt
             new_ai_response_text, _ = await self.generate_rag_response(
                 prompt=new_prompt_text, 
                 conversation_uid=conversation_uid, 
@@ -297,7 +328,7 @@ class ConversationService:
         except Exception as e:
             await session.rollback()
             logger.error(f"Error edit/regen message {message_to_edit_uid}: {e}", exc_info=True)
-            detail_message = f"Erreur modification/regÃ©nÃ©ration: {e}"
+            detail_message = f"Erreur modification/regénération: {e}"
             status_code_err = status.HTTP_503_SERVICE_UNAVAILABLE if "generate_rag_response" in traceback.format_exc() else status.HTTP_500_INTERNAL_SERVER_ERROR
             raise HTTPException(status_code=status_code_err, detail=detail_message)
         return await self.get_conversation_messages(conversation_uid, user_uid, session)
@@ -309,7 +340,7 @@ class ConversationService:
             """Renomme une conversation existante."""
             conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
             if not conversation: 
-                raise ConversationNotFound("Conversation non trouvÃ©e ou accÃ¨s interdit.")
+                raise ConversationNotFound("Conversation non trouvée ou accès interdit.")
             conversation.title = new_title
             conversation.update_at = datetime.utcnow()
             session.add(conversation)
@@ -321,59 +352,60 @@ class ConversationService:
     async def get_documents_for_conversation(
         self, conversation_uid: uuid.UUID, user_uid: uuid.UUID, session: AsyncSession
     ) -> List[DocumentModel]:
-        """RÃ©cupÃ¨re tous les documents associÃ©s Ã  une conversation."""
+        """
+        Récupère tous les documents de la bibliothèque de l'utilisateur et enrichit
+        l'information avec leur statut (actif/inactif) pour la conversation actuelle.
+        """
         if not await self.get_user_conversation(user_uid, conversation_uid, session):
-            raise ForbiddenAccess("AccÃ¨s interdit Ã  cette conversation.")
+            raise ForbiddenAccess("Accès interdit à cette conversation.")
         
         try:
-            statement = select(Document).where(Document.conversation_uid == conversation_uid).order_by(desc(Document.upload_date))
-            result = await session.exec(statement)
-            db_documents = result.all()
-            return [DocumentModel.from_orm(doc) for doc in db_documents]
+            # Étape 1: Récupérer tous les documents de l'utilisateur
+            user_docs_stmt = select(Document).where(Document.user_uid == user_uid).order_by(desc(Document.upload_date))
+            user_docs_result = await session.exec(user_docs_stmt)
+            all_user_documents = user_docs_result.all()
+
+            # Étape 2: Récupérer les statuts d'activation pour CETTE conversation
+            link_stmt = select(ConversationDocumentLink).where(
+                ConversationDocumentLink.conversation_uid == conversation_uid
+            )
+            link_result = await session.exec(link_stmt)
+            # Crée un dictionnaire pour un accès rapide: {doc_uid: is_active}
+            active_statuses = {link.document_uid: link.is_active for link in link_result.all()}
+
+            # Étape 3: Combiner les informations
+            response_documents = []
+            for doc in all_user_documents:
+                doc_model = DocumentModel.from_orm(doc)
+                # Le document est actif dans ce contexte si un lien existe et is_active=True
+                doc_model.isActiveInContext = active_statuses.get(doc.uid, False)
+                response_documents.append(doc_model)
+                
+            return response_documents
         except Exception as e:
             logger.error(f"Error retrieving documents for conversation {conversation_uid}: {e}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve documents")
-
-    async def get_active_documents_for_conversation(
-        self, conversation_uid: uuid.UUID, user_uid: uuid.UUID, session: AsyncSession
-    ) -> List[Document]:
-        """
-        RÃ©cupÃ¨re uniquement les documents actifs d'une conversation.
-        """
-        if not await self.get_user_conversation(user_uid, conversation_uid, session):
-            raise ForbiddenAccess("AccÃ¨s interdit Ã  cette conversation.")
-            
-        statement = select(Document).where(
-            Document.conversation_uid == conversation_uid,
-            Document.is_active == True
-        ).order_by(desc(Document.upload_date))
-        result = await session.exec(statement)
-        return result.all()
     
 
-    async def remove_document_from_context(
+    async def delete_document_permanently(
         self,
         document_id: uuid.UUID,
-        conversation_uid: uuid.UUID,
         user_uid: uuid.UUID,
         session: AsyncSession
     ) -> None:
         """
-        Supprime un document de manière sécurisée : BDD, fichier physique et base vectorielle.
+        Supprime un document de manière permanente : BDD, fichier physique et base vectorielle.
+        Cette action est irréversible et affecte toutes les conversations.
         """
-        logger.info(f"Début de la suppression du document {document_id} pour la conversation {conversation_uid}")
+        logger.info(f"Début de la suppression permanente du document {document_id}")
         
-        # 1. Vérifier les permissions
-        conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
-        if not conversation:
-            raise ForbiddenAccess("Accès interdit à cette conversation.")
-
-        # 2. Récupérer le document
+        # 1. Récupérer le document et vérifier les permissions
         doc_to_delete = await session.get(Document, document_id)
-        if not doc_to_delete or doc_to_delete.conversation_uid != conversation_uid:
-            raise DocumentNotFound("Document non trouvé ou n'appartient pas à la conversation.")
+        # Vérifier que le document appartient bien à l'utilisateur qui fait la demande
+        if not doc_to_delete or doc_to_delete.user_uid != user_uid:
+            raise DocumentNotFound("Document non trouvé ou accès interdit.")
 
-        # 3. Supprimer le fichier physique
+        # 2. Supprimer le fichier physique
         try:
             full_file_path = os.path.join(Config.UPLOAD_DIR, doc_to_delete.file_path)
             if os.path.exists(full_file_path):
@@ -385,7 +417,7 @@ class ConversationService:
             logger.error(f"Erreur lors de la suppression du fichier physique {doc_to_delete.file_path}: {e}", exc_info=True)
             # On continue pour au moins nettoyer la BDD, mais on log l'erreur.
 
-        # 4. Supprimer les vecteurs associés (CRUCIAL pour le RAG)
+        # 3. Supprimer les vecteurs associés (CRUCIAL pour le RAG)
         try:
             vectorstore.delete_documents_from_vectorstore(document_uid=str(doc_to_delete.uid))
             logger.info(f"Vecteurs supprimés pour le document {doc_to_delete.uid}")
@@ -393,11 +425,11 @@ class ConversationService:
             logger.error(f"Erreur lors de la suppression des vecteurs pour le document {doc_to_delete.uid}: {e}", exc_info=True)
             # Log l'erreur mais continuer pour que l'utilisateur voit le document disparaître
         
-        # 5. Supprimer l'enregistrement de la base de données
+        # 4. Supprimer l'enregistrement de la base de données
         await session.delete(doc_to_delete)
         await session.commit()
         
-        logger.info(f"Document {document_id} supprimé avec succès de la base de données.")
+        logger.info(f"Document {document_id} supprimé définitivement avec succès.")
         return None
     
     async def process_and_index_files(
@@ -408,98 +440,70 @@ class ConversationService:
         session: AsyncSession
     ) -> dict:
         """
-        Traite et indexe les fichiers uploadÃ©s pour une conversation.
-        Traite chaque fichier individuellement pour Ã©viter les conflits de mÃ©tadonnÃ©es.
+        Traite et indexe les fichiers uploadés pour une conversation.
         """
         conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
         if not conversation:
-            raise ForbiddenAccess("AccÃ¨s interdit Ã  cette conversation.")
+            raise ForbiddenAccess("Accès interdit à cette conversation.")
 
         saved_db_documents_info = []
         errors = []
-        conversation_upload_path = os.path.join(Config.UPLOAD_DIR, str(conversation_uid))
-        os.makedirs(conversation_upload_path, exist_ok=True)
-
-        logger.info(f"Processing files for conversation {conversation_uid}. Saving to: {conversation_upload_path}")
+        # Le chemin de sauvegarde est basé sur l'UID de l'utilisateur pour regrouper ses fichiers
+        user_upload_path = os.path.join(Config.UPLOAD_DIR, str(user_uid))
+        os.makedirs(user_upload_path, exist_ok=True)
 
         for file in files:
             temp_dir_for_rag = None
             try:
-                # Nettoyage du nom de fichier pour la sÃ©curitÃ©
                 safe_filename = "".join(c if c.isalnum() or c in ['.', '_', '-'] else '_' for c in file.filename)
-                if not safe_filename:
-                    safe_filename = f"upload_{uuid.uuid4().hex[:8]}{os.path.splitext(file.filename)[1]}"
-
-                persistent_file_path = os.path.join(conversation_upload_path, safe_filename)
+                persistent_file_path = os.path.join(user_upload_path, safe_filename)
                 
-                # Lecture et sauvegarde du contenu
                 file_content = await file.read()
-                await file.seek(0)
 
                 async with aiofiles.open(persistent_file_path, 'wb') as out_file:
                     await out_file.write(file_content)
 
-                # Enregistrement des mÃ©tadonnÃ©es en base
+                # Création de l'objet Document correct
                 new_db_document = Document(
                     filename=safe_filename,
-                    conversation_uid=conversation_uid,
+                    user_uid=user_uid,  # On lie à l'utilisateur
                     file_path=os.path.relpath(persistent_file_path, Config.UPLOAD_DIR),
                     size=len(file_content),
                     mime_type=file.content_type or "application/octet-stream",
-                    upload_date=datetime.utcnow(),
-                    is_active=True
                 )
                 session.add(new_db_document)
-                await session.flush()
-                await session.refresh(new_db_document)
+                await session.flush() # Pour obtenir le nouvel UID
 
+                # Créer le lien d'activation pour la conversation courante
+                link = ConversationDocumentLink(
+                    conversation_uid=conversation_uid,
+                    document_uid=new_db_document.uid,
+                    is_active=True
+                )
+                session.add(link)
+
+                # Logique RAG
                 temp_dir_for_rag = tempfile.mkdtemp()
                 temp_file_path = os.path.join(temp_dir_for_rag, safe_filename)
                 async with aiofiles.open(temp_file_path, 'wb') as temp_out_file:
                     await temp_out_file.write(file_content)
 
-                # Traitement RAG du fichier individuel
-                logger.info(f"Loading document for RAG from {temp_dir_for_rag}")
                 rag_docs_loaded = charger_documents(temp_dir_for_rag)
                 if rag_docs_loaded:
                     split_docs = split_documents(rag_docs_loaded)
-                    if split_docs:
-                        for doc in split_docs:
-                            if not doc.metadata:
-                                doc.metadata = {}
-                            doc.metadata.update({
-                                "document_uid": str(new_db_document.uid),
-                                "conversation_uid": str(conversation_uid),
-                                "source": new_db_document.filename
-                            })
-                        add_documents_to_vectorstore(split_docs, document_uid=str(new_db_document.uid))
-                        logger.info(f"Document '{safe_filename}' (UID: {new_db_document.uid}) indexÃ© avec {len(split_docs)} chunks")
+                    add_documents_to_vectorstore(split_docs, document_uid=str(new_db_document.uid))
+                    logger.info(f"Document '{safe_filename}' (UID: {new_db_document.uid}) indexé avec {len(split_docs)} chunks")
 
                 saved_db_documents_info.append(DocumentModel.from_orm(new_db_document).model_dump(mode='json'))
-                logger.info(f"Document '{new_db_document.filename}' processed (UID: {new_db_document.uid})")
 
             except Exception as e_file:
                 errors.append({"filename": file.filename, "error": str(e_file)})
-                logger.error(f"Error processing file {file.filename}: {e_file}", exc_info=True)
             finally:
                 if temp_dir_for_rag:
-                    try:
-                        shutil.rmtree(temp_dir_for_rag)
-                    except Exception as e_clean:
-                        logger.error(f"Error cleaning temp dir for {file.filename}: {e_clean}")
+                    shutil.rmtree(temp_dir_for_rag)
                 await file.close()
-
-        try:
-            await session.commit()
-            logger.info(f"Committed {len(saved_db_documents_info)} documents to database")
-        except Exception as e_commit:
-            await session.rollback()
-            logger.error(f"Error committing documents to database: {e_commit}", exc_info=True)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Server error during file processing"
-            )
-
+        
+        await session.commit()
         return {
             "message": f"Processed {len(saved_db_documents_info)} document(s) successfully",
             "documents": saved_db_documents_info,
@@ -508,30 +512,31 @@ class ConversationService:
 
     async def get_document_filepath(self, document_uid: uuid.UUID, conversation_uid: uuid.UUID, user_uid: uuid.UUID, session: AsyncSession) -> Optional[str]:
         """
-        RÃ©cupÃ¨re le chemin sÃ©curisÃ© d'un document.
-        VÃ©rifie les permissions utilisateur et la sÃ©curitÃ© du chemin.
+        Récupère le chemin sécurisé d'un document sur le disque.
         """
         conversation = await self.get_user_conversation(user_uid=user_uid, conversation_uid=conversation_uid, session=session)
         if not conversation:
-            raise ForbiddenAccess("AccÃ¨s interdit Ã  cette conversation.")
+            raise ForbiddenAccess("Accès interdit à cette conversation.")
 
         doc = await session.get(Document, document_uid)
-        if not doc or doc.conversation_uid != conversation_uid:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document non trouvÃ© ou n'appartient pas Ã  la conversation.")
+        if not doc or doc.user_uid != user_uid:
+            raise DocumentNotFound("Document non trouvé ou accès interdit.")
         
-        if doc.file_path:
-            base_upload_dir = os.path.abspath(Config.UPLOAD_DIR)
-            full_file_path = os.path.abspath(os.path.join(base_upload_dir, doc.file_path))
+        # Construire et retourner le chemin complet du fichier
+        try:
+            # On utilise le chemin relatif stocké en BDD et on le combine avec le dossier d'upload
+            full_file_path = os.path.join(Config.UPLOAD_DIR, doc.file_path)
             
-            if os.path.commonpath([base_upload_dir]) == os.path.commonpath([base_upload_dir, full_file_path]):
-                if os.path.exists(full_file_path):
-                    return full_file_path
-                else:
-                    logger.error(f"File not found at stored path: {full_file_path}")
-            else:
-                logger.error(f"Invalid file path detected (potential traversal): {doc.file_path}")
-        
-        return None
+            # Vérification de sécurité : le fichier doit exister
+            if not os.path.exists(full_file_path) or not os.path.isfile(full_file_path):
+                logger.error(f"Le fichier physique est introuvable pour le document {document_uid} au chemin : {full_file_path}")
+                return None
+                
+            return full_file_path
+
+        except Exception as e:
+            logger.error(f"Erreur lors de la construction du chemin pour le document {document_uid}: {e}", exc_info=True)
+            return None
 
     async def toggle_document_active_status(
         self, 
@@ -542,29 +547,39 @@ class ConversationService:
         session: AsyncSession
     ) -> DocumentModel:
         """
-        Active ou dÃ©sactive un document pour le contexte RAG.
-        Permet un contrÃ´le granulaire des documents utilisÃ©s dans les rÃ©ponses.
+        Active ou désactive un document pour une conversation en créant/mettant à jour
+        une entrée dans la table ConversationDocumentLink.
         """
-        logger.info(f"Changement statut document {document_uid} -> actif: {is_active}")
-        
+        # 1. Vérifier que l'utilisateur a accès à la conversation et au document
         conversation = await self.get_user_conversation(user_uid, conversation_uid, session)
         if not conversation:
-            raise ForbiddenAccess("AccÃ¨s interdit Ã  cette conversation.")
+            raise ForbiddenAccess("Accès interdit à cette conversation.")
         
         doc = await session.get(Document, document_uid)
-        if not doc or doc.conversation_uid != conversation_uid:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Document non trouvÃ© ou n'appartient pas Ã  cette conversation."
+        if not doc or doc.user_uid != user_uid:
+            raise DocumentNotFound("Document non trouvé ou n'appartient pas à cet utilisateur.")
+        
+        # 2. Chercher un lien existant
+        link = await session.get(ConversationDocumentLink, (conversation_uid, document_uid))
+        
+        if link:
+            # Mettre à jour le lien existant
+            link.is_active = is_active
+        else:
+            # Créer un nouveau lien s'il n'existe pas
+            link = ConversationDocumentLink(
+                conversation_uid=conversation_uid,
+                document_uid=document_uid,
+                is_active=is_active
             )
         
-        doc.is_active = is_active
-        session.add(doc)
+        session.add(link)
         await session.commit()
-        await session.refresh(doc)
         
-        logger.info(f"Document {document_uid} maintenant {'actif' if is_active else 'inactif'}")
-        return DocumentModel.from_orm(doc)
+        # 3. Retourner le modèle de document mis à jour pour le frontend
+        doc_model = DocumentModel.from_orm(doc)
+        doc_model.isActiveInContext = is_active
+        return doc_model
 
     async def stream_rag_response_generator(
         self,
@@ -742,3 +757,90 @@ class ConversationService:
         
         # Signal de fin de stream
         yield "data: [DONE]\n\n"
+
+    async def upload_documents_for_user(
+        self,
+        target_user_uid: uuid.UUID,
+        files: List[UploadFile],
+        session: AsyncSession
+    ) -> dict:
+        """
+        Traite et indexe les fichiers uploadés par un admin pour un utilisateur cible.
+        Les documents sont ajoutés à la "bibliothèque" de l'utilisateur et activés
+        dans toutes ses conversations existantes.
+        """
+        target_user = await session.get(User, target_user_uid)
+        if not target_user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur cible non trouvé.")
+
+        saved_docs_info = []
+        errors = []
+        user_upload_path = os.path.join(Config.UPLOAD_DIR, str(target_user_uid))
+        os.makedirs(user_upload_path, exist_ok=True)
+
+        user_conversations_stmt = select(Conversation).where(Conversation.user_uid == target_user_uid)
+        user_conversations_result = await session.exec(user_conversations_stmt)
+        user_conversations = user_conversations_result.all()
+        logger.info(f"L'utilisateur {target_user_uid} a {len(user_conversations)} conversations existantes.")
+
+        for file in files:
+            temp_dir_for_rag = None
+            try:
+                # 1. Sauvegarder le fichier et créer l'entrée Document
+                safe_filename = "".join(c if c.isalnum() or c in ['.', '_', '-'] else '_' for c in file.filename)
+                persistent_file_path = os.path.join(user_upload_path, safe_filename)
+                file_content = await file.read()
+
+                async with aiofiles.open(persistent_file_path, 'wb') as out_file:
+                    await out_file.write(file_content)
+
+                # CRÉATION CORRECTE DE L'OBJET DOCUMENT
+                new_document = Document(
+                    filename=safe_filename,
+                    user_uid=target_user_uid,  # Utilise user_uid
+                    file_path=os.path.relpath(persistent_file_path, Config.UPLOAD_DIR),
+                    size=len(file_content),
+                    mime_type=file.content_type
+                )
+                session.add(new_document)
+                await session.flush() # Pour obtenir l'UID du document
+
+                # 2. Indexer le document dans la base vectorielle (logique ajoutée)
+                temp_dir_for_rag = tempfile.mkdtemp()
+                temp_file_path = os.path.join(temp_dir_for_rag, safe_filename)
+                async with aiofiles.open(temp_file_path, 'wb') as temp_out_file:
+                    await temp_out_file.write(file_content)
+                
+                rag_docs_loaded = charger_documents(temp_dir_for_rag)
+                if rag_docs_loaded:
+                    split_docs = split_documents(rag_docs_loaded)
+                    # La fonction add_documents_to_vectorstore ajoute déjà le document_uid aux métadonnées
+                    add_documents_to_vectorstore(split_docs, document_uid=str(new_document.uid))
+                    logger.info(f"Document '{safe_filename}' (UID: {new_document.uid}) indexé avec {len(split_docs)} chunks")
+
+                # 3. Activer le document pour toutes les conversations existantes
+                new_links_for_this_doc = [
+                    ConversationDocumentLink(
+                        conversation_uid=conv.uid,
+                        document_uid=new_document.uid,
+                        is_active=True
+                    ) for conv in user_conversations
+                ]
+                
+                if new_links_for_this_doc:
+                    session.add_all(new_links_for_this_doc)
+                
+                logger.info(f"Document {new_document.uid} activé pour {len(new_links_for_this_doc)} conversations.")
+                
+                saved_docs_info.append(DocumentModel.from_orm(new_document).model_dump(mode='json'))
+
+            except Exception as e:
+                errors.append({"filename": file.filename, "error": str(e)})
+                logger.error(f"Erreur lors du traitement du fichier {file.filename}: {e}", exc_info=True)
+            finally:
+                if temp_dir_for_rag:
+                    shutil.rmtree(temp_dir_for_rag)
+                await file.close()
+        
+        await session.commit()
+        return {"documents": saved_docs_info, "errors": errors}

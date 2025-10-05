@@ -8,6 +8,16 @@ from sqlalchemy import Column, Integer, VARCHAR, TIMESTAMP, func, text
 from sqlmodel import Boolean, Column, Field, Relationship, SQLModel, Index
 
 
+# --- NOUVELLE TABLE DE LIAISON ---
+class ConversationDocumentLink(SQLModel, table=True):
+    """Table de liaison pour gérer quels documents sont actifs dans quelles conversations"""
+    __tablename__ = "conversation_document_link"
+    
+    conversation_uid: uuid.UUID = Field(foreign_key="conversations.uid", primary_key=True)
+    document_uid: uuid.UUID = Field(foreign_key="documents.uid", primary_key=True)
+    is_active: bool = Field(default=True)
+
+
 # --- Modèle Utilisateur ---
 class User(SQLModel, table=True):
     """Modèle représentant un utilisateur de l'application"""
@@ -19,7 +29,7 @@ class User(SQLModel, table=True):
     )
     username: str
     # Email unique avec index pour des recherches rapides
-    email:str = Field(index=True, unique=True)
+    email: str = Field(index=True, unique=True)
     first_name: str
     last_name: str
     # Rôle par défaut "user"
@@ -57,7 +67,13 @@ class User(SQLModel, table=True):
     # Relation directe avec les messages (optionnelle mais utile)
     messages: List["Message"] = Relationship(
         back_populates="user",
-        sa_relationship_kwargs={"lazy": "selectin"}
+        sa_relationship_kwargs={"lazy": "selectin","cascade": "all, delete-orphan"}
+    )
+    
+    # RELATION : Documents appartenant à l'utilisateur
+    documents: List["Document"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"lazy": "selectin","cascade": "all, delete-orphan"}
     )
 
     def __repr__(self):
@@ -98,13 +114,9 @@ class Conversation(SQLModel, table=True):
         }
     )
 
-    # Relation avec les documents
-    documents: List["Document"] = Relationship(
-        back_populates="conversation",
-        sa_relationship_kwargs={
-            "lazy": "selectin",
-            "cascade": "all, delete-orphan"
-        }
+    # Relation avec les liens de documents
+    document_links: List["ConversationDocumentLink"] = Relationship(
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
     )
 
     def __repr__(self) -> str:
@@ -150,10 +162,11 @@ class Message(SQLModel, table=True):
     def __repr__(self):
         content_type = "Prompt" if self.prompt else "Response"
         return f"<{content_type} {self.uid} in Conv {self.conversation_uid}>"
-    
 
+
+# --- MODÈLE DOCUMENT ---
 class Document(SQLModel, table=True):
-    """Modèle représentant un document uploadé dans une conversation"""
+    """Modèle représentant un document uploadé POUR UN UTILISATEUR"""
     __tablename__ = "documents"
 
     uid: uuid.UUID = Field(
@@ -161,13 +174,13 @@ class Document(SQLModel, table=True):
     )
     # Nom original du fichier
     filename: str = Field(sa_column=Column(VARCHAR, nullable=False))
-    # Référence vers la conversation
-    conversation_uid: uuid.UUID = Field(foreign_key="conversations.uid", index=True, nullable=False)
+
+    # Le document appartient à un utilisateur
+    user_uid: uuid.UUID = Field(foreign_key="users.uid", index=True, nullable=False)
+    
     # Chemin de stockage du fichier (unique)
     file_path: str = Field(sa_column=Column(VARCHAR, nullable=False, unique=True))
     
-    # Indicateur si le document est actif/disponible
-    is_active: bool = Field(default=True, sa_column=Column(Boolean, nullable=False, server_default=text("true")))
     
     upload_date: datetime = Field(
         default_factory=datetime.utcnow,
@@ -178,8 +191,13 @@ class Document(SQLModel, table=True):
     # Type MIME du fichier
     mime_type: str = Field(sa_column=Column(VARCHAR, nullable=False))
 
-    # Relation avec la conversation
-    conversation: "Conversation" = Relationship(back_populates="documents")
+    # Relation avec l'utilisateur propriétaire
+    user: "User" = Relationship(back_populates="documents")
+
+    # Relation avec les liens de conversation (pour savoir où il est utilisé)
+    conversation_links: List["ConversationDocumentLink"] = Relationship(
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
 
 # --- Index pour optimiser les performances des requêtes ---
@@ -187,4 +205,5 @@ Index("idx_conversation_user", Conversation.user_uid)
 Index("idx_message_conversation", Message.conversation_uid)
 Index("idx_message_user", Message.user_uid)
 Index("idx_message_created_at", Message.created_at)  # Utile pour l'ordonnancement
-Index("idx_document_conversation", Document.conversation_uid)  # Index pour la récupération des documents
+Index("idx_document_user", Document.user_uid)  # Nouveau : Index pour la récupération des documents par utilisateur
+Index("idx_conversation_document_link", ConversationDocumentLink.conversation_uid, ConversationDocumentLink.document_uid)  # Nouveau : Index pour la table de liaison

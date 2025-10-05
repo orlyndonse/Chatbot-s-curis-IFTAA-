@@ -74,7 +74,6 @@ export default function Home() {
                 <div className={styles.quickLinks}>
                   <Link className={clsx('button button--outline button--md', styles.quickLinkButton)} to="/docs/getting-started/creating-account">Création de Compte</Link>
                   <Link className={clsx('button button--outline button--md', styles.quickLinkButton)} to="/docs/rag-usage/formulating-questions">Poser des Questions Efficaces</Link>
-                  <Link className={clsx('button button--outline button--md', styles.quickLinkButton)} to="/docs/documents/how-to-upload">Téléverser des Documents</Link>
                 </div>
               </div>
             </div>

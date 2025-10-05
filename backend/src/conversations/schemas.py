@@ -59,18 +59,20 @@ class ConversationRenameModel(BaseModel):
 
 class DocumentModel(BaseModel):
     """
-    Modèle pour les documents associés aux conversations.
-    Inclut le statut d'activation pour le contrôle du contexte RAG.
+    Modèle pour les documents de la bibliothèque d'un utilisateur.
+    Le statut d'activation est ajouté dynamiquement en fonction du contexte de la conversation.
     """
     model_config = ConfigDict(from_attributes=True)
 
     uid: uuid.UUID
     filename: str = Field(..., max_length=255)
-    conversation_uid: uuid.UUID
+    user_uid: uuid.UUID  # CORRIGÉ : Lié à l'utilisateur
     upload_date: datetime
     size: int
     mime_type: str = Field(..., max_length=100)
-    is_active: bool = Field(default=True)
+    
+    # NOUVEAU : Ce champ sera ajouté par la logique du service pour le frontend
+    isActiveInContext: Optional[bool] = None
 
 class DocumentUploadResponse(BaseModel):
     """Réponse pour l'upload de documents avec gestion d'erreurs."""

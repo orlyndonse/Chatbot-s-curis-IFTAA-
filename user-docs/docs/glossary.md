@@ -26,9 +26,6 @@ Voici une liste de termes que vous rencontrerez en utilisant l'Assistant RAG Fiq
 * **Documents de Contexte / مستندات السياق**
     * Les fichiers (PDF, TXT, DOCX, etc.) que vous [téléversez](./documents/how-to-upload.md) dans l'application. L'IA utilise le contenu de ces documents comme source principale d'information pour répondre à vos questions sur le Fiqh Maliki.
 
-* **Glisser-Déposer (Drag-and-Drop) / السحب والإفلات**
-    * Une manière de [téléverser des documents](./documents/how-to-upload.md) en les sélectionnant depuis votre ordinateur et en les faisant glisser directement sur la zone de téléversement de l'application.
-
 * **Historique / السجل**
     * La liste de vos discussions (conversations) passées, accessible depuis la [Barre Latérale](#barre-latérale-sidebar--الشريط-الجانبي).
 

@@ -29,7 +29,8 @@ Si vous avez des discussions que vous ne souhaitez plus conserver dans votre his
 * **Changement de discussion active :**
     * Si la discussion que vous avez supprimée était celle activement affichée dans la zone de chat, le système sélectionnera automatiquement la discussion suivante dans la liste (généralement la plus récente restante).
     * Si aucune autre discussion n'existe, la zone de chat reviendra à l'état initial, affichant potentiellement le [message de bienvenue](../interface-overview/main-chat-area.md#1-message-de-bienvenue-point-232-de-loutline-réf-greetingsjsx).
-* **Les messages et documents associés :** La suppression d'une discussion entraîne également la suppression de tous les messages qu'elle contenait et du contexte des documents qui y étaient spécifiquement associés (du point de vue de l'application).
+* **Les messages associés :** La suppression d'une discussion entraîne également la suppression de tous les messages qu'elle contenait.
+* **Les documents :** Les documents restent disponibles car ils sont liés à votre compte utilisateur et gérés par l'administrateur, non plus par conversation spécifique.
 
 **Soyez prudent lorsque vous supprimez des discussions, car cette action est généralement irréversible.**
 

@@ -10,9 +10,9 @@ Nous sommes ravis de vous accueillir dans le guide utilisateur de notre système
 ## Qu'est-ce que ce système ? (Section 1.2)
 
 L'Assistant RAG Fiqh est une application web innovante qui vous permet de :
-* **Téléverser(uploader) vos propres documents** relatifs au Fiqh Maliki (livres, articles, fatwas, notes personnelles).
+* **Accéder aux documents** relatifs au Fiqh Maliki (livres, articles, fatwas, notes) qui vous ont été assignés par l'administrateur.
 * **Poser des questions en langue arabe** sur le contenu de ces documents.
-* **Recevoir des réponses précises et contextuelles** générées par une intelligence artificielle, basées sur les informations que vous avez fournies.
+* **Recevoir des réponses précises et contextuelles** générées par une intelligence artificielle, basées sur les informations de votre collection personnelle.
 
 En résumé, cet outil vous aide à explorer et à comprendre vos textes de Fiqh Maliki de manière interactive et efficace, comme si vous aviez un assistant de recherche personnel.
 
@@ -22,7 +22,7 @@ Ce guide est destiné à tous les utilisateurs, en particulier ceux qui ne sont 
 
 * **Un étudiant en études islamiques** (comme notre persona Omar) cherchant à approfondir vos recherches.
 * **Un membre de la communauté ou un éducateur** (comme notre persona Fatima) souhaitant vérifier des informations ou préparer des enseignements.
-* Ou simplement **une personne désireuse d'apprendre** à partir de vos propres collections de textes.
+* Ou simplement **une personne désireuse d'apprendre** à partir de votre collection personnelle de textes.
 
 Nous avons conçu ce guide pour être aussi clair et simple que possible.
 
@@ -31,7 +31,7 @@ Nous avons conçu ce guide pour être aussi clair et simple que possible.
 Pour utiliser l'Assistant RAG Fiqh, vous aurez besoin de :
 * Un **ordinateur ou un appareil mobile** (smartphone, tablette) avec une connexion internet.
 * Un **navigateur web moderne** (par exemple, Google Chrome, Mozilla Firefox, Safari, Microsoft Edge).
-* Vos documents de Fiqh Maliki sous forme numérique (formats supportés : PDF, TXT, DOCX, CSV, HTML).
+* Un **compte utilisateur** créé et configuré par l'administrateur avec des documents assignés.
 
 ---
 

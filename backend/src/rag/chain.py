@@ -16,7 +16,6 @@ import re
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Template de prompt pour le modèle en langue arabe
 # Template de prompt pour le modèle en langue arabe AVEC FORMATAGE MARKDOWN
 template_arabe = """أنت خبير في الفقه المالكي.
 
@@ -45,16 +44,16 @@ def get_llm():
     """Initialise et retourne l'instance du LLM (pattern singleton)."""
     global _llm_instance
     if _llm_instance is None:
-        logger.info("Initialisation du LLM Google Generative AI (gemini-1.5-flash)...")
+        logger.info("Initialisation du LLM Google Generative AI (gemini-2.5-pro)...")
         if not Config.GEMINI_API_KEY:
             raise ValueError("Clé API Google (GEMINI_API_KEY) manquante.")
         try:
             _llm_instance = ChatGoogleGenerativeAI(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-pro",
                 temperature=0.2,
                 convert_system_message_to_human=True,
                 google_api_key=Config.GEMINI_API_KEY,
-                streaming=True  # Activer explicitement
+                streaming=True 
             )
             logger.info("LLM initialisé avec succès.")
         except Exception as e:

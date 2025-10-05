@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from src.auth.routes import auth_router
 from src.conversations.routes import conversation_router
+from src.admin.routes import admin_router
 from .errors import register_all_errors
 from .middleware import register_middleware
 from src.rag.chain import initialize_rag_chain
@@ -63,6 +64,7 @@ logger.info("Gestionnaires d'erreurs et middlewares enregistrés.")
 # Routes API
 app.include_router(auth_router, prefix=f"{version_prefix}/auth", tags=["Auth"])
 app.include_router(conversation_router, prefix=f"{version_prefix}/conversations", tags=["Conversations"])
+app.include_router(admin_router, prefix=f"{version_prefix}/admin", tags=["Admin"])
 logger.info("Routeurs API inclus.")
 
 @app.get("/", tags=["Root"])

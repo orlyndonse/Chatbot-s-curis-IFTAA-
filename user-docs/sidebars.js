@@ -66,7 +66,6 @@ const sidebars = {
       link: {type: 'generated-index'},
       items: [
         'documents/why-upload',
-        'documents/how-to-upload',
         'documents/viewing-uploaded',
         'documents/previewing-documents',
         'documents/deleting-documents',
@@ -91,7 +90,6 @@ const sidebars = {
       link: {type: 'generated-index'},
       items: [
         'faq/login-account-issues',
-        'faq/document-upload-issues',
         'faq/chat-ai-response-issues',
         'faq/general-usage-faq',
       ],

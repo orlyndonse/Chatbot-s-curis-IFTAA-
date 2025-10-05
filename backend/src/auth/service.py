@@ -1,7 +1,9 @@
+import uuid
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.db.models import User
+from typing import Optional  
 
 from .schemas import UserCreateModel
 from .utils import generate_passwd_hash
@@ -61,3 +63,17 @@ class UserService:
         await session.commit()
 
         return user
+    
+    async def get_user_by_username(self, username: str, session: AsyncSession):
+        """Récupère un utilisateur par son username"""
+        statement = select(User).where(User.username == username)
+        result = await session.exec(statement)
+        return result.first()
+
+    async def username_exists(self, username: str, session: AsyncSession, exclude_uid: Optional[uuid.UUID] = None):
+        """Vérifie si un username existe déjà (en excluant optionnellement un utilisateur)"""
+        statement = select(User).where(User.username == username)
+        if exclude_uid:
+            statement = statement.where(User.uid != exclude_uid)
+        result = await session.exec(statement)
+        return result.first() is not None

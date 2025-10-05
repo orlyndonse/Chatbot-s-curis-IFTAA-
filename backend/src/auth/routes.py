@@ -13,26 +13,26 @@ from src.auth.dependencies import (
     get_current_user,
 )
 from src.auth.schemas import (
-    EmailModel, # Utilisé pour resend
+    EmailModel,
     PasswordResetConfirmModel,
     PasswordResetRequestModel,
     TokenValidationResponse,
     UserCreateModel,
-    UserDetailModel, # Utilisé pour /me
+    UserDetailModel,
     UserLoginModel,
     UserModel,
-    VerifyTokenModel, # Essentiel pour POST /verify-email
+    VerifyTokenModel,
 )
 from src.auth.service import UserService
 from src.auth.utils import (
     create_access_token,
     create_url_safe_token,
-    decode_token, # Peut-être non utilisé directement ici, mais ok
+    decode_token,
     decode_url_safe_token,
     generate_passwd_hash,
     verify_password,
 )
-from src.auth.schemas import PasswordResetConfirmModel
+from src.auth.schemas import PasswordResetConfirmModel, UserProfileUpdateModel, PasswordChangeModel
 
 from src.config import Config # Essentiel pour FRONTEND_URL
 from src.db.main import get_session
@@ -45,7 +45,7 @@ from src.errors import (
     TokenExpired, # Important pour decode_url_safe_token
     UserAlreadyExists,
     UserNotFound,
-    InsufficientPermission, # Géré par RoleChecker
+    InsufficientPermission,
 )
 from src.mail import create_message, mail
 
@@ -88,7 +88,7 @@ async def create_user_account(
         <h1>Vérifiez votre Email</h1>
         <p>Bienvenue ! Veuillez cliquer sur ce <a href="{verification_link}">lien</a> pour vérifier votre adresse email et activer votre compte.</p>
         <p>Si vous n'avez pas créé de compte, veuillez ignorer cet email.</p>
-        """ # [cite: 1]
+        """ 
         # Crée et envoie le message email en tâche de fond
         message = create_message(
             recipients=[new_user.email],
@@ -135,7 +135,7 @@ async def resend_verification_email(
     <h1>Nouvelle tentative de vérification</h1>
     <p>Veuillez cliquer <a href="{verification_link}">ici</a> pour finaliser la vérification de votre compte.</p>
     <p>Si vous n'avez pas demandé ce renvoi, veuillez ignorer cet email.</p>
-    """ # [cite: 1]
+    """
     # Crée et envoie le message
     message = create_message(
         recipients=[user.email],
@@ -188,7 +188,7 @@ async def verify_user_email(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erreur interne lors de la vérification.")
 
 
-# Route GET de redirection pour la vérification d'email (compatibilité avec anciens liens)
+# Route GET de redirection pour la vérification d'email
 @auth_router.get("/verify/{token}", include_in_schema=False)
 async def redirect_verify_user_account(token: str):
     """
@@ -231,7 +231,14 @@ async def login_users(
         "message": "Connexion réussie",
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "user": {"email": user.email, "uid": str(user.uid), "first_name": user.first_name},
+        "user": {
+            "email": user.email,
+            "uid": str(user.uid),
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "role": user.role 
+        },
     }
 
 
@@ -306,7 +313,7 @@ async def request_password_reset(
         <h1>Réinitialisez votre mot de passe</h1>
         <p>Veuillez cliquer sur ce <a href="{reset_link}">lien</a> pour réinitialiser votre mot de passe.</p>
         <p>Ce lien expirera bientôt. Si vous n'avez pas demandé cette réinitialisation, veuillez ignorer cet email.</p>
-        """ # [cite: 1]
+        """
         # Crée et envoie le message email en tâche de fond
         message = create_message(
             recipients=[user.email],
@@ -418,3 +425,163 @@ async def validate_password_reset_token(token: str):
 @auth_router.get("/ping")
 async def ping():
     return {"message": "Auth service is running!"}
+
+@auth_router.put(
+    "/me/profile",
+    response_model=UserModel,
+    dependencies=[Depends(RoleChecker(["admin", "user"]))],
+    summary="Update User Profile"
+)
+async def update_user_profile(
+    profile_data: UserProfileUpdateModel,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Met à jour les informations du profil utilisateur"""
+    update_dict = {}
+    
+    # Validation et préparation des données à mettre à jour
+    if profile_data.first_name is not None:
+        if not profile_data.first_name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le prénom ne peut pas être vide."
+            )
+        update_dict["first_name"] = profile_data.first_name.strip()
+    
+    if profile_data.last_name is not None:
+        if not profile_data.last_name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le nom ne peut pas être vide."
+            )
+        update_dict["last_name"] = profile_data.last_name.strip()
+    
+    if profile_data.username is not None:
+        new_username = profile_data.username.strip()
+        if not new_username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Le nom d'utilisateur ne peut pas être vide."
+            )
+        
+        # Vérifier si le username est déjà pris par un autre utilisateur
+        if new_username != current_user.username:
+            username_taken = await user_service.username_exists(
+                new_username, session, exclude_uid=current_user.uid
+            )
+            if username_taken:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Ce nom d'utilisateur est déjà utilisé."
+                )
+        update_dict["username"] = new_username
+    
+    if not update_dict:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Aucune modification fournie."
+        )
+    
+    try:
+        updated_user = await user_service.update_user(current_user, update_dict, session)
+        logging.info(f"Profile updated for user {current_user.email}")
+        return UserModel.model_validate(updated_user)
+    except Exception as e:
+        logging.exception(f"Error updating profile for user {current_user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors de la mise à jour du profil."
+        )
+
+
+@auth_router.put(
+    "/me/change-password",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RoleChecker(["admin", "user"]))],
+    summary="Change User Password"
+)
+async def change_user_password(
+    password_data: PasswordChangeModel,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Change le mot de passe de l'utilisateur connecté"""
+    # Vérifier que les nouveaux mots de passe correspondent
+    if password_data.new_password != password_data.confirm_new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Les nouveaux mots de passe ne correspondent pas."
+        )
+    
+    # Vérifier que le nouveau mot de passe est différent de l'ancien
+    if password_data.current_password == password_data.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le nouveau mot de passe doit être différent de l'ancien."
+        )
+    
+    # Vérifier le mot de passe actuel
+    if not verify_password(password_data.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le mot de passe actuel est incorrect."
+        )
+    
+    # Générer le nouveau hash
+    new_password_hash = generate_passwd_hash(password_data.new_password)
+    
+    try:
+        await user_service.update_user(
+            current_user,
+            {"password_hash": new_password_hash},
+            session
+        )
+        logging.info(f"Password changed for user {current_user.email}")
+        return {"message": "Mot de passe modifié avec succès."}
+    except Exception as e:
+        logging.exception(f"Error changing password for user {current_user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors du changement de mot de passe."
+        )
+    
+@auth_router.delete(
+    "/me/account",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(RoleChecker(["admin", "user"]))],
+    summary="Delete User Account"
+)
+async def delete_user_account(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    token_details: dict = Depends(AccessTokenBearer())
+):
+    """Supprime définitivement le compte de l'utilisateur connecté"""
+    try:
+        user_email = current_user.email
+        user_uid = current_user.uid
+        
+        # Supprimer l'utilisateur (cascade supprimera conversations, messages, documents)
+        await session.delete(current_user)
+        await session.commit()
+        
+        # Ajouter le token à la blocklist pour déconnexion immédiate
+        jti = token_details.get("jti")
+        if jti:
+            await add_jti_to_blocklist(jti)
+        
+        logging.info(f"User account deleted: {user_email} (UID: {user_uid})")
+        
+        return {
+            "message": "Compte supprimé avec succès.",
+            "email": user_email
+        }
+        
+    except Exception as e:
+        await session.rollback()
+        logging.exception(f"Error deleting account for user {current_user.email}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur lors de la suppression du compte."
+        )

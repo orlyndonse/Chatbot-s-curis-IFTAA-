@@ -3,13 +3,13 @@ sidebar_position: 4
 title: Prévisualiser le Contenu des Documents
 ---
 
-# Prévisualiser le Contenu des Documents Téléversés
+# Prévisualiser le Contenu des Documents Assignés
 
-Après avoir [téléversé vos documents](./how-to-upload.md) et les avoir vus listés dans le [Panneau de Gestion des Documents](../interface-overview/document-management-pane.md), vous pourriez vouloir vérifier rapidement leur contenu sans avoir à les ouvrir dans une application externe. L'Assistant RAG Fiqh offre une fonction d'aperçu pour cela.
+Après avoir consulté vos documents assignés dans le [Panneau de Gestion des Documents](../interface-overview/document-management-pane.md), vous pourriez vouloir vérifier rapidement leur contenu sans avoir à les ouvrir dans une application externe. L'Assistant RAG Fiqh offre une fonction d'aperçu pour cela.
 
 ## Comment Accéder à l'Aperçu d'un Document ?
 
-1.  Dans la [Liste des Documents Chargés](../interface-overview/document-management-pane.md#3-liste-des-documents-chargés-documents-chargés-point-341), localisez le document dont vous souhaitez voir un aperçu.
+1.  Dans la [Liste des Documents Assignés](../interface-overview/document-management-pane.md#3-liste-des-documents-chargés-documents-chargés-point-341), localisez le document dont vous souhaitez voir un aperçu.
 2.  À droite des informations du document, cliquez sur le bouton "**Aperçu**" (Preview). Il est généralement représenté par une icône en forme d'œil (`visibility`).
 
     ![Bouton "Aperçu" à côté d'un document dans la liste](/img/screenshot-document-preview-button.png)
@@ -35,7 +35,7 @@ Après avoir cliqué sur "Aperçu", une fenêtre modale (pop-up) s'ouvrira, affi
 
 * **Bouton d'Action Contextuelle :**
     * Un bouton en bas de la modale indiquera si le document est actuellement "Actif dans le Contexte" ou "Inactif". Le texte du bouton changera en conséquence (par exemple, "Désactiver du Contexte" ou "Activer dans le Contexte").
-    * Cliquer sur ce bouton modifiera l'état actif/inactif du document pour la discussion en cours.
+    * Cliquer sur ce bouton modifiera l'état actif/inactif du document pour vos conversations.
 
 * **Bouton "Fermer" :**
     * Situé en bas de la fenêtre d'aperçu.
@@ -48,8 +48,8 @@ Après avoir cliqué sur "Aperçu", une fenêtre modale (pop-up) s'ouvrira, affi
     ![Boutons d'action et de fermeture dans la fenêtre d'aperçu](/img/screenshot-document-preview-action-buttons.png)
     
 
-L'aperçu est un moyen pratique de vérifier rapidement le contenu d'un fichier sans interrompre votre flux de travail et de gérer son état actif dans le contexte.
+L'aperçu est un moyen pratique de vérifier rapidement le contenu d'un document assigné sans interrompre votre flux de travail et de gérer son état actif dans le contexte.
 
 ---
 
-Après avoir visualisé vos documents, vous pourriez avoir besoin de les gérer. Voyons comment [Supprimer des Documents du Contexte](./deleting-documents.md).
+Après avoir visualisé vos documents, vous pourriez avoir besoin de comprendre les [Limites des Documents](./document-limits.md).

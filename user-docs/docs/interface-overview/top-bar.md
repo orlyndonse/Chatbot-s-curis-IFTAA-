@@ -57,6 +57,13 @@ Ces éléments sont généralement visibles sur toutes les tailles d'écran et r
     * **Thème (Theme) :**
         * **Icône :** L'icône change dynamiquement - `dark_mode` pour passer au mode sombre si le thème actuel est clair, ou `light_mode` pour passer au mode clair si le thème actuel est sombre.
         * **Fonction :** Permet de basculer l'apparence de l'application entre un thème clair et un thème sombre. Votre préférence est sauvegardée dans le `localStorage` de votre navigateur.
+
+    * **Gestion des Utilisateurs (Administrateurs uniquement) :**
+        * **Icône :** `manage_accounts`
+        * **Visibilité :** Cette option n'apparaît que si vous avez le rôle d'administrateur (`user.role === 'admin'`).
+        * **Fonction :** Permet d'accéder à la page d'administration des utilisateurs (`/admin/users`) pour gérer les comptes utilisateurs de l'application.
+
+        ![Gestion des utilisateurs pour administrateurs](/img/topbar_gestion_utilisateurs.png)
         
     * **Documentation :**
         * **Icône :** `help_outline`

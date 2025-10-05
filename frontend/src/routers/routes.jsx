@@ -7,6 +7,11 @@ import ResetPassword from "../pages/ResetPassword.jsx";
 import SendEmail from "../pages/SendEmail.jsx";
 import ResetPasswordSuccess from "../pages/ResetPasswordSuccess.jsx";
 import VerifyEmailHandler from "../pages/VerifyEmailHandler.jsx";
+import AdminUserManagement from "../pages/AdminUserManagement.jsx";
+import Profile from "../pages/Profile.jsx"; // NOUVEAU
+
+// Import du layout admin
+import AdminLayout from "../components/AdminLayout.jsx";
 
 /**
  * Actions
@@ -28,6 +33,7 @@ import { resetLinkReloader }   from './loaders/resetLinkLoader.js';
 import { resetPasswordLoader } from "./loaders/resetPasswordLoader.js";
 import appLoader from './loaders/appLoader.js';
 import { resetPasswordSuccessReloader } from "./loaders/resetPasswordSuccessReloader.js";
+import { adminUsersLoader } from "./loaders/adminUsersLoader.js";
 
 
 const router = createBrowserRouter([
@@ -35,7 +41,6 @@ const router = createBrowserRouter([
         path: '/',
         element: <App />,
         loader: appLoader,
-        
     },
     {
         path: '/verify-email',
@@ -52,7 +57,7 @@ const router = createBrowserRouter([
         element: <Login />,
         action: loginAction,
         loader: loginLoader,
-      },
+    },
     {
         path: '/reset-link',
         element: <ResetLink />,
@@ -71,13 +76,30 @@ const router = createBrowserRouter([
         loader: sendEmailLoader, 
         action: sendEmailAction   
     },
-    
     {
         path: "/resetpasswordsuccess",
         element: <ResetPasswordSuccess />,
         loader: resetPasswordSuccessReloader,
         action: resetPasswordSuccessAction
     },
-
+    // NOUVELLE ROUTE PROFILE
+    {
+        path: '/profile',
+        element: <Profile />,
+        loader: appLoader, // Utilise le même loader que '/' pour avoir accès aux données user
+    },
+    {
+        path: '/admin',
+        element: <AdminLayout />,
+        loader: appLoader,
+        children: [
+            {
+                path: 'users',
+                element: <AdminUserManagement />,
+                loader: adminUsersLoader,
+            },
+        ],
+    },
 ]);
+
 export default router;

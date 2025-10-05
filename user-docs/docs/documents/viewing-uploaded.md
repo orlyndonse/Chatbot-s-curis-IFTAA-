@@ -1,22 +1,22 @@
 ---
 sidebar_position: 3
-title: Visualiser les Documents Téléversés
+title: Visualiser les Documents Assignés
 ---
 
-# Visualiser les Documents Téléversés
+# Visualiser les Documents Assignés
 
-Une fois que vous avez [téléversé des documents](./how-to-upload.md) pour une discussion spécifique, il est important de savoir où les retrouver et quelles informations sont affichées à leur sujet. Ces documents forment le contexte que l'intelligence artificielle (IA) utilisera pour répondre à vos questions.
+Une fois que l'administrateur vous a assigné des documents pour votre utilisation, il est important de savoir où les retrouver et quelles informations sont affichées à leur sujet. Ces documents forment le contexte que l'intelligence artificielle (IA) utilisera pour répondre à vos questions dans toutes vos conversations.
 
 ## Où Trouver la Liste des Documents ? (Point 6.3.1)
 
-La liste des documents que vous avez téléversés pour la **discussion active** se trouve dans le [Panneau de Gestion des Documents](../interface-overview/document-management-pane.md). Cette section est généralement visible sous ou à côté de la zone de chat principale.
+La liste des documents qui vous ont été assignés se trouve dans le [Panneau de Gestion des Documents](../interface-overview/document-management-pane.md). Cette section est généralement visible sous ou à côté de la zone de chat principale.
 
 Elle est introduite par un titre tel que "**Documents chargés**".
 
 ![Liste des documents chargés dans le panneau de gestion](/img/screenshot-document-list-items.png)
 ## Informations Affichées pour Chaque Document (Point 6.3.2)
 
-Pour chaque document téléversé dans la discussion active, vous verrez les informations suivantes:
+Pour chaque document qui vous a été assigné, vous verrez les informations suivantes:
 
 1.  **Icône de Type de Fichier :**
     * Une petite icône visuelle est affichée à gauche du nom du fichier pour vous aider à identifier rapidement le type de document.
@@ -26,7 +26,7 @@ Pour chaque document téléversé dans la discussion active, vous verrez les inf
         * `file_present` (icône de fichier générique) pour d'autres types de fichiers supportés (comme `.doc`, `.docx`, `.csv`, `.html`).
 
 2.  **Nom du Fichier (Filename) :**
-    * Le nom original du fichier tel qu'il était sur votre ordinateur lors du téléversement.
+    * Le nom du fichier tel qu'il a été configuré par l'administrateur lors de l'assignation.
 
 3.  **Taille du Fichier (Size) :**
     * La taille du fichier, généralement affichée en Kilooctets (Ko) ou Mégaoctets (Mo), pour vous donner une idée de la quantité de données qu'il contient.
@@ -35,10 +35,10 @@ Pour chaque document téléversé dans la discussion active, vous verrez les inf
     4.  **Actions Disponibles :**
     * À droite de chaque document listé, vous trouverez généralement des boutons d'action :
         * **"Aperçu" (Preview) :** Vous permet de [visualiser le contenu du document](./previewing-documents.md) directement dans l'application.
-        * **"Supprimer" (Delete) :** Vous permet de [retirer le document](./deleting-documents.md) du contexte de la discussion actuelle.
+        * **Contrôle d'Activation :** Vous permet d'activer ou désactiver le document pour vos conversations courantes (les documents inactifs ne sont pas utilisés par l'IA pour générer des réponses).
 
-Cette liste vous permet de garder une trace des documents qui alimentent les réponses de l'IA pour la conversation en cours.
+Cette liste vous permet de garder une trace des documents qui alimentent les réponses de l'IA pour toutes vos conversations.
 
 ---
 
-Maintenant que vous savez où voir vos documents, découvrez comment [Prévisualiser leur Contenu](./previewing-documents.md).
+Maintenant que vous savez où voir vos documents assignés, découvrez comment [Prévisualiser leur Contenu](./previewing-documents.md).

@@ -24,7 +24,7 @@ Lorsque vous cliquez sur une discussion dans l'historique :
 
 * **La Zone de Chat Principale est mise à jour :** Le contenu de la [Zone de Chat Principale](../interface-overview/main-chat-area.md) est remplacé par les messages (vos questions et les réponses de l'IA) de la discussion que vous venez de sélectionner.
 * **La discussion devient "active" :** Elle sera souvent mise en évidence visuellement dans la barre latérale (par exemple, avec une couleur de fond différente) pour indiquer que c'est la discussion actuellement affichée.
-* **Le contexte documentaire est restauré :** Les documents que vous aviez téléversés (s'il y en avait) redeviennent le contexte actif pour l'IA.
+* **Le contexte documentaire est restauré :** Les documents que l'administrateur a preparé pour vous (s'il y en avait) redeviennent le contexte actif pour l'IA.
 * **Indicateur de chargement :** Il se peut qu'un bref [indicateur de chargement](../interface-overview/main-chat-area.md#4-indicateurs-de-chargement-point-323) apparaisse pendant que les messages de la discussion sont récupérés et affichés.
 
     ![Zone de chat affichant les messages d'une discussion sélectionnée](/img/screenshot-main-chat-area-messages.png)

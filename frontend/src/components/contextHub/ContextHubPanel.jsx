@@ -14,17 +14,18 @@ const ContextHubPanel = ({
   isOpen,
   onClose,
   title = "Hub de Contexte",
-  currentContextSize,
-  maxContextSize,
-  onFilesAdded,
-  isUploading,
   activeConversationId,
   documents = [],
   onDeleteDocument,
   onPreviewDocument,
   deletingDocumentId,
   isLoading,
-  onToggleDocumentActive
+  onToggleDocumentActive,
+  onFilesAdded,
+  isUploading,
+  userRole,
+  currentContextSize,
+  maxContextSize
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('upload_date_desc');
@@ -52,7 +53,7 @@ const ContextHubPanel = ({
         processedDocs.sort((a, b) => a.filename.localeCompare(b.filename));
         break;
       case 'filename_desc':
-        processedDocs.sort((a, b) => b.filename.localeCompare(b.filename));
+        processedDocs.sort((a, b) => b.filename.localeCompare(a.filename));
         break;
       case 'size_asc':
         processedDocs.sort((a, b) => (a.size || 0) - (b.size || 0));
@@ -83,7 +84,6 @@ const ContextHubPanel = ({
     <div className={`context-hub-panel ${panelPositionClass} ${panelTransformClass}`}>
       <div className="context-hub-header">
         <h2 className="text-titleLarge font-medium truncate pr-2" title={title}>{title}</h2>
-        {/* Bouton de fermeture avec icône locale */}
         <button
           title="Fermer le panneau"
           className="p-2 rounded hover:bg-light-surfaceContainerHigh dark:hover:bg-dark-surfaceContainerHigh"
@@ -94,23 +94,30 @@ const ContextHubPanel = ({
       </div>
       
       <div className="context-hub-content">
-        <div className="p-4 border-b border-light-outline/20 dark:border-dark-outline/20">
-          {typeof currentContextSize === 'number' && typeof maxContextSize === 'number' && (
-            <ContextSizeIndicator currentSize={currentContextSize} maxSize={maxContextSize} />
-          )}
-          <DocumentUploadArea
-            onFilesAdded={onFilesAdded}
-            isUploading={isUploading}
-          />
-          {!activeConversationId && !isUploading && (
-            <p className="text-bodySmall text-center mt-2 text-light-onSurfaceVariant/70 dark:text-dark-onSurfaceVariant/70">
-              Sélectionnez ou commencez une conversation pour ajouter des documents.
-            </p>
-          )}
-        </div>
+        {/* Zone d'upload - visible seulement pour les admins avec une conversation active */}
+        {userRole === 'admin' && activeConversationId && onFilesAdded && (
+          <div className="px-4 pt-4">
+            <DocumentUploadArea
+              onFilesAdded={onFilesAdded}
+              isUploading={isUploading}
+              supportedFormats=".pdf,.txt,.docx,.csv,.html"
+            />
+          </div>
+        )}
 
+        {/* Indicateur de taille du contexte pour les admins */}
+        {userRole === 'admin' && currentContextSize !== undefined && maxContextSize !== undefined && (
+          <div className="px-4">
+            <ContextSizeIndicator
+              currentSize={currentContextSize}
+              maxSize={maxContextSize}
+            />
+          </div>
+        )}
+
+        {/* Filtres - affichés seulement s'il y a des documents et pas de loading initial */}
         {activeConversationId && documents.length > 0 && !isLoading && (
-          <div className="px-4 pt-3">
+          <div className="px-4 pt-4">
             <DocumentFilters
               searchTerm={searchTerm}
               onSearchTermChange={handleSearchTermChange}
@@ -120,7 +127,8 @@ const ContextHubPanel = ({
           </div>
         )}
 
-        <div className="px-4 pb-4 pt-1 flex-grow overflow-y-auto space-y-3">
+        {/* Liste des documents */}
+        <div className="px-4 pb-4 pt-3 flex-grow overflow-y-auto space-y-3">
           {isLoading && !filteredAndSortedDocuments.length ? (
             <div className="flex flex-col justify-center items-center h-full">
               <CircularProgress size="large" />
@@ -145,9 +153,16 @@ const ContextHubPanel = ({
               Aucun document ne correspond à votre recherche pour "{searchTerm}".
             </p>
           ) : !isLoading && activeConversationId && documents.length === 0 ? (
-            <p className="text-bodyMedium text-center text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant pt-10">
-              Aucun document dans cette conversation pour le moment. Glissez-déposez ou parcourez pour télécharger.
-            </p>
+            <div className="text-center pt-10">
+              <p className="text-bodyMedium text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant">
+                Aucun document disponible pour cette conversation.
+              </p>
+              {userRole === 'admin' && (
+                <p className="text-bodySmall text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant mt-2">
+                  Utilisez la zone d'upload ci-dessus pour ajouter des documents.
+                </p>
+              )}
+            </div>
           ) : !isLoading && !activeConversationId ? (
             <p className="text-bodyMedium text-center text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant pt-10">
               Sélectionnez une conversation pour voir ses documents.
@@ -155,11 +170,14 @@ const ContextHubPanel = ({
           ) : null}
         </div>
 
-        <div className="p-4 border-t border-light-outline/20 dark:border-dark-outline/20">
-          <p className="text-bodySmall text-center text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant">
-            {activeDocumentsCount} sur {filteredAndSortedDocuments.length} document(s) actif(s) (affichage de {filteredAndSortedDocuments.length} sur {documents.length} au total).
-          </p>
-        </div>
+        {/* Footer avec statistiques */}
+        {documents.length > 0 && (
+          <div className="p-4 border-t border-light-outline/20 dark:border-dark-outline/20">
+            <p className="text-bodySmall text-center text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant">
+              {activeDocumentsCount} sur {filteredAndSortedDocuments.length} document(s) actif(s) (affichage de {filteredAndSortedDocuments.length} sur {documents.length} au total).
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -187,6 +205,7 @@ ContextHubPanel.propTypes = {
   deletingDocumentId: PropTypes.string,
   isLoading: PropTypes.bool,
   onToggleDocumentActive: PropTypes.func,
+  userRole: PropTypes.string,
 };
 
 export default ContextHubPanel;

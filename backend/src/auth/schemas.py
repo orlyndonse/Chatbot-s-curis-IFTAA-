@@ -33,6 +33,7 @@ class UserModel(BaseModel):
     email: str
     first_name: str
     last_name: str
+    role: str
     is_verified: bool
     password_hash: str = Field(exclude=True)  # Exclut le hash du mot de passe des réponses
     created_at: datetime
@@ -78,3 +79,15 @@ class TokenValidationResponse(BaseModel):
     valid: bool
     email: Optional[str] = None  # Email associé au token si valide
     detail: Optional[str] = None  # Message détaillé en cas d'erreur
+
+class UserProfileUpdateModel(BaseModel):
+    """Modèle pour la mise à jour du profil utilisateur"""
+    first_name: Optional[str] = Field(None, max_length=25)
+    last_name: Optional[str] = Field(None, max_length=25)
+    username: Optional[str] = Field(None, max_length=8)
+
+class PasswordChangeModel(BaseModel):
+    """Modèle pour le changement de mot de passe"""
+    current_password: str = Field(min_length=6)
+    new_password: str = Field(min_length=6)
+    confirm_new_password: str = Field(min_length=6)

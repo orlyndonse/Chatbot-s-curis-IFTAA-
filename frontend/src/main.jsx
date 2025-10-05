@@ -10,7 +10,7 @@ import { LanguageProvider } from './contexts/LanguageContext'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <UserProvider>
-      <LanguageProvider> {/* <- Envelopper l'application */}
+      <LanguageProvider>
         <SnackbarProvider>
           <RouterProvider router={router} />
         </SnackbarProvider>

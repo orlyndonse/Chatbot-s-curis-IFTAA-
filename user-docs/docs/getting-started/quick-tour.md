@@ -35,18 +35,18 @@ Situé en bas de la zone de chat principale, c'est ici que vous interagissez dir
 
 * **Zone de Texte :** Pour taper vos questions (prompts) en langue arabe.
 * **Bouton "Envoyer" (Send) :** Pour soumettre votre question à l'IA.
-* **Bouton "Uploader des documents" (Upload) :** Pour ajouter des fichiers qui serviront de contexte à l'IA pour cette conversation.
 
     *(Détails dans [Le Champ de Saisie de Prompt](../interface-overview/prompt-field.md).)*
 
-## 4. La Zone de Gestion des Documents (Point 2.3.4)
+## 4. Le Context Hub - Zone de Gestion des Documents (Point 2.3.4)
 
-Généralement située sous la zone de chat, cette section est cruciale pour le fonctionnement du système RAG :
+Accessible depuis la barre supérieure via le bouton "Context Hub", cette section est cruciale pour le fonctionnement du système RAG :
 
-* **Liste des Documents Chargés :** Affiche les documents que vous avez téléversés pour la conversation et la session active.
-* **Indicateur de Taille du Contexte :** Vous donne une idée de la quantité d'informations fournies à l'IA.
-* **Options d'Upload :** Vous permet d'ajouter de nouveaux documents (par glisser-déposer ou en cliquant pour parcourir).
-* **Actions sur les Documents :** Vous pourrez y voir des options pour prévisualiser ou supprimer des documents du contexte de la conversation.
+* **Recherche de Documents :** Un champ de recherche vous permet de trouver parmi les documents qui vous ont été assignés par l'administrateur.
+* **Filtres et Tri :** Options pour organiser l'affichage de vos documents (par date d'ajout, etc.).
+* **Liste des Documents Assignés :** Affiche tous les documents de votre collection personnelle avec leurs informations (nom, taille, date).
+* **Sélection de Documents :** Vous pouvez sélectionner quels documents utiliser comme contexte pour votre conversation actuelle.
+* **Indicateur de Documents Actifs :** Affiche le nombre de documents actuellement utilisés dans le contexte de la conversation.
 
     *(Explorez cette section plus en détail dans [La Zone de Gestion des Documents](../interface-overview/document-management-pane.md).)*
 
@@ -56,6 +56,7 @@ En haut de l'application, la barre supérieure contient :
 
 * **(Sur mobile/tablette) Icône Menu :** Pour ouvrir/fermer la barre latérale.
 * **Logo de l'Application.**
+* **Bouton "Context Hub" :** Pour accéder à la gestion de vos documents assignés.
 * **Votre Avatar Utilisateur :** Cliquez dessus pour accéder à des options comme "Se déconnecter".
 
     *(Plus d'informations dans [La Barre Supérieure](../interface-overview/top-bar.md).)*

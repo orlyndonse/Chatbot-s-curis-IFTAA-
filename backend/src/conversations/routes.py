@@ -27,7 +27,6 @@ from .service import ConversationService
 logger = logging.getLogger(__name__)
 conversation_router = APIRouter()
 
-# Dépendance simplifiée pour les rôles utilisateur et admin
 user_role_checker = Depends(RoleChecker(["user", "admin"]))
 
 
@@ -40,7 +39,7 @@ user_role_checker = Depends(RoleChecker(["user", "admin"]))
 async def list_user_conversations(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Récupère toutes les conversations d'un utilisateur."""
     return await conv_service.get_user_conversations(
@@ -60,7 +59,7 @@ async def create_new_conversation(
     conversation_data: ConversationCreateModel,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Crée une nouvelle conversation pour l'utilisateur."""
     return await conv_service.create_conversation(
@@ -80,7 +79,7 @@ async def get_messages_for_conversation(
     conversation_uid: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Récupère tous les messages d'une conversation spécifique."""
     try:
@@ -113,11 +112,10 @@ async def add_message_to_conversation(
     message_data: MessageCreateModel,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Ajoute un message utilisateur et génère une réponse AI avec RAG."""
     try:
-        # AMÉLIORÉ : Toute la logique est maintenant dans une seule méthode du service
         return await conv_service.add_message_to_conversation(
             conversation_uid=conversation_uid,
             user=current_user,
@@ -128,7 +126,7 @@ async def add_message_to_conversation(
         status_code = status.HTTP_404_NOT_FOUND if isinstance(e, ConversationNotFound) else status.HTTP_403_FORBIDDEN
         raise HTTPException(status_code=status_code, detail=str(e))
     except HTTPException as e:
-        raise e  # Propage les erreurs HTTP déjà formatées par le service
+        raise e
     except Exception as e:
         logger.error(f"Erreur inattendue lors de l'ajout du message: {e}", exc_info=True)
         raise HTTPException(
@@ -154,12 +152,11 @@ async def stream_message_to_conversation(
     La sauvegarde du message se fait à la fin du stream dans le service.
     """
     try:
-        # AMÉLIORÉ : La vérification de l'accès se fait maintenant dans le générateur
         return StreamingResponse(
             conv_service.stream_rag_response_generator(
                 prompt=message_data.prompt, 
                 conversation_uid=conversation_uid, 
-                user=current_user,  # AMÉLIORÉ : Passer l'objet User complet
+                user=current_user,
                 session=session
             ), 
             media_type="text/event-stream"
@@ -167,7 +164,6 @@ async def stream_message_to_conversation(
         
     except Exception as e:
         logger.error(f"Erreur critique dans l'endpoint de streaming: {e}", exc_info=True)
-        # La gestion d'erreur fine (403, 404) est gérée dans le générateur lui-même
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Erreur interne du serveur."
@@ -184,7 +180,7 @@ async def delete_conversation(
     conversation_uid: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Supprime définitivement une conversation et tous ses messages."""
     try:
@@ -218,7 +214,7 @@ async def edit_message_in_conversation(
     edit_data: MessageEditModel,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Modifie un message utilisateur et régénère la réponse AI correspondante."""
     try:
@@ -260,7 +256,7 @@ async def rename_conversation_title(
     rename_data: ConversationRenameModel,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Modifie le titre d'une conversation."""
     try:
@@ -296,15 +292,15 @@ async def rename_conversation_title(
 @conversation_router.post(
     "/{conversation_uid}/upload", 
     status_code=status.HTTP_200_OK, 
-    dependencies=[user_role_checker], 
-    summary="Télécharger des documents pour le RAG"
+    dependencies=[Depends(RoleChecker(["admin"]))], # Sécurisé pour les admins uniquement
+    summary="[ADMIN] Télécharger des documents pour le RAG"
 )
 async def upload_files_to_conversation(
     conversation_uid: uuid.UUID,
     files: List[UploadFile] = File(...),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Télécharge et indexe des documents pour enrichir le contexte RAG."""
     logger.info(f"Téléchargement de fichiers pour la conversation {conversation_uid} par l'utilisateur {current_user.uid}")
@@ -316,11 +312,10 @@ async def upload_files_to_conversation(
         )
     
     try:
-        # AMÉLIORÉ : La vérification de l'accès est maintenant gérée dans le service
         result = await conv_service.process_and_index_files(
             files=files, 
             conversation_uid=conversation_uid, 
-            user_uid=current_user.uid,  # AMÉLIORÉ : Passer user_uid au lieu de vérifier ici
+            user_uid=current_user.uid,
             session=session
         )
         
@@ -369,14 +364,13 @@ async def get_conversation_documents(
     conversation_uid: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Récupère tous les documents associés à une conversation."""
-    # AMÉLIORÉ : La vérification de l'accès est maintenant gérée dans le service
     try:
         return await conv_service.get_documents_for_conversation(
             conversation_uid=conversation_uid,
-            user_uid=current_user.uid,  # AMÉLIORÉ : Passer user_uid pour vérification
+            user_uid=current_user.uid,
             session=session
         )
     except (ConversationNotFound, ForbiddenAccess) as e:
@@ -395,28 +389,19 @@ async def delete_document_from_conversation(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
-    """Supprime un document du contexte d'une conversation."""
+    """Supprime un document de manière permanente."""
     try:
-        await conv_service.remove_document_from_context(
+        await conv_service.delete_document_permanently(
             document_id=document_id, 
-            conversation_uid=conversation_uid,
-            user_uid=current_user.uid,  # AMÉLIORÉ : Passer user_uid pour vérification
+            user_uid=current_user.uid,
             session=session
         )
         return Response(status_code=status.HTTP_204_NO_CONTENT)
         
-    except (ConversationNotFound, DocumentNotFound) as e:
-        if isinstance(e, (ConversationNotFound)):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail=str(e)
-            )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail=str(e)
-        )
+    except DocumentNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         logger.error(f"Erreur lors de la suppression du document {document_id}: {e}", exc_info=True)
         raise HTTPException(
@@ -435,7 +420,7 @@ async def download_document_content(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Télécharge le contenu d'un document spécifique."""
     try:
@@ -493,7 +478,7 @@ async def toggle_document_active_status(
     is_active: bool,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Active ou désactive un document pour le contexte RAG de la conversation."""
     try:
@@ -530,11 +515,10 @@ async def get_active_documents(
     conversation_uid: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-    conv_service: ConversationService = Depends(),  # SIMPLIFIÉ
+    conv_service: ConversationService = Depends(),
 ):
     """Récupère uniquement les documents actifs utilisés pour le RAG."""
     try:
-        # AMÉLIORÉ : La vérification de l'accès est maintenant gérée dans le service
         active_documents = await conv_service.get_active_documents_for_conversation(
             conversation_uid=conversation_uid,
             user_uid=current_user.uid,
@@ -589,3 +573,4 @@ async def stream_edit_message_in_conversation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Erreur interne du serveur."
         )
+        

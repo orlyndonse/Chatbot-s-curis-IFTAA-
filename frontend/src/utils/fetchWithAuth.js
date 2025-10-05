@@ -1,11 +1,12 @@
 import { redirect } from 'react-router-dom';
 
-const API_BASE_URL = "http://localhost:8000";
 
 /**
  * Fonction utilitaire pour effectuer des requêtes API authentifiées.
  * Gère la récupération du jeton, l'ajout de l'en-tête Authorization, la gestion basique des erreurs,
  * et les redirections en cas d'erreurs 401/403.
+ * 
+ * utilise des URL relatives pour fonctionner avec le proxy Vite.
  */
 export const fetchWithAuth = async (endpoint, options = {}) => {
   const token = localStorage.getItem("awesomeLeadsToken");
@@ -32,7 +33,9 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
     headers['Content-Type'] = 'application/json';
   }
 
-  const url = `${API_BASE_URL}${endpoint}`;
+  // Utilisation directe de l'endpoint comme URL relative
+  // Le proxy Vite se chargera de rediriger vers le bon serveur
+  const url = endpoint;
 
   try {
     const response = await fetch(url, {
@@ -63,10 +66,10 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
 
     // Gérer spécifiquement le statut 204 No Content
     if (response.status === 204) {
-      return null;// Ou renvoyer un indicateur de succès si nécessaire
+      return null; // Ou renvoyer un indicateur de succès si nécessaire
     }
 
-    // // Supposer une réponse JSON pour les autres requêtes réussies
+    // Supposer une réponse JSON pour les autres requêtes réussies
     return await response.json();
 
   } catch (error) {

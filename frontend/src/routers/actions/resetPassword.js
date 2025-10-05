@@ -35,7 +35,7 @@ export const resetPasswordAction = async ({ request }) => {
                 }),
             }
         );
-        // ... (gestion de la réponse inchangée) ...
+        // ... gestion de la réponse ...
          const data = await response.json();
 
          if (!response.ok) {

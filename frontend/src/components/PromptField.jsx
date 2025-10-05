@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion';
 import { useRef, useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { IconBtn, UploadButton  } from "./Button";
-import { CircularProgress } from './Progress';
+import { IconBtn } from "./Button";
 
-const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUploading = false, }) => {
+const PromptField = ({ onSubmit, isLoading, isDisabled = false }) => {
   const inputField = useRef();
   const inputFieldContainer = useRef();
-  const fileInputRef = useRef();
 
   const [isMultiline, setMultiline] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -77,8 +75,18 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
     onSubmit(trimmedValue);
 
     if (inputField.current) {
-        inputField.current.innerHTML = ''; // Cela déclenchera le sélecteur CSS :empty
+      inputField.current.innerHTML = ''; // On vide le contenu
+
+      // --- CORRECTION : Forcer un "reflow" du navigateur ---
+      // Cette astuce (retirer puis redonner le focus en une fraction de seconde) 
+      // force le navigateur à recalculer complètement le style et la géométrie du champ.
+      // Il "réalise" qu'il est vide, lui redonne sa hauteur d'origine, et le placeholder
+      // ainsi que le curseur se repositionnent alors correctement.
+      inputField.current.blur();
+      inputField.current.focus();
     }
+    
+    // Le reste de la réinitialisation de l'état
     setInputValue('');
     setMultiline(false);
   }, [inputValue, isLoading, isDisabled, onSubmit]);
@@ -110,17 +118,11 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' }},
   };
 
-  const handleFileUpload = useCallback((e) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    if (typeof onUpload === 'function') {
-      onUpload(e.target.files);
-    }
-    // Réinitialiser l'entrée pour permettre de télécharger le fichier à nouveau
-    e.target.value = '';
-  }, [onUpload]);
-
   const containerClasses = `prompt-field-container flex items-end p-2 bg-light-surfaceContainer dark:bg-dark-surfaceContainer ${isMultiline ? 'rounded-2xl' : 'rounded-full'} transition-all duration-200 ease-out ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}`;
   const inputClasses = `prompt-field grow relative mx-4 py-3 text-light-onSurface dark:text-dark-onSurface text-bodyLarge outline-none whitespace-pre-wrap max-h-[230px] overflow-y-auto`;
+
+  // Déterminer si le bouton doit être actif
+  const isButtonActive = !isLoading && !isDisabled && inputValue.trim();
 
   return (
     <motion.div 
@@ -144,25 +146,15 @@ const PromptField = ({ onSubmit, isLoading, isDisabled = false, onUpload, isUplo
         onKeyDown={handleKeyDown}
       />
       <div className="flex items-center gap-2 ms-auto">
-        <UploadButton
-          title={isUploading ? 'Traitement en cours...' : 'Uploader des documents'}
-          variants={promptFieldChildrenVariant}
-          onChange={handleFileUpload}
-          disabled={isDisabled || isLoading || isUploading}
-          isLoading={isUploading}
-          accept=".pdf,.txt,.doc,.docx,.csv,.html"
-          multiple
-        />
-
-        <IconBtn
-          icon={isLoading ? 'sync' : 'send'}
-          title={isLoading ? 'Chargement...' : 'Envoyer'}
-          size='large'
-          classes={`ms-auto ${isLoading ? 'animate-spin' : ''}`}
-          variants={promptFieldChildrenVariant}
-          onClick={handleSubmit}
-          disabled={isLoading || isDisabled || !inputValue.trim()}
-        />
+        <motion.div variants={promptFieldChildrenVariant}>
+          <IconBtn
+            icon={isLoading ? "sync" : "send"}
+            size="large"
+            classes={`${isLoading ? 'animate-spin' : ''} ${isButtonActive ? 'text-light-primary dark:text-dark-primary' : 'opacity-50'}`}
+            onClick={handleSubmit}
+            disabled={!isButtonActive}
+          />
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -172,8 +164,6 @@ PromptField.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   isLoading: PropTypes.bool,
   isDisabled: PropTypes.bool,
-  onUpload: PropTypes.func,
-  isUploading: PropTypes.bool,
 };
 
 export default PromptField;

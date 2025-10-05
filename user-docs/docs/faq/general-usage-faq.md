@@ -27,26 +27,43 @@ Vous verrez peut-être un message en bas de l'interface indiquant : *"Ce systèm
 
 * **Signification :** Ce message est un rappel important que, bien que l'intelligence artificielle (IA) soit un outil puissant, elle n'est pas infaillible.
     * L'IA apprend à partir de grandes quantités de données, mais elle peut parfois faire des erreurs, mal interpréter une question, ou générer des informations qui ne sont pas totalement exactes ou complètes.
-    * Même lorsqu'elle se base sur les documents que vous avez fournis, la manière dont elle synthétise ou présente l'information peut parfois nécessiter une vérification.
+    * Même lorsqu'elle se base sur les documents qui vous ont été assignés, la manière dont elle synthétise ou présente l'information peut parfois nécessiter une vérification.
 * **Importance dans le Contexte du Fiqh :** Pour des sujets aussi importants et sensibles que le Fiqh Maliki, où la précision est primordiale, il est **crucial de ne pas se fier aveuglément** aux réponses de l'IA pour prendre des décisions religieuses ou émettre des jugements.
 * **Votre Rôle :**
     * Utilisez l'Assistant RAG Fiqh comme un **outil d'aide à la recherche et à la compréhension initiale**.
-    * **Vérifiez toujours les informations critiques** en consultant les textes originaux que vous avez téléversés, d'autres sources faisant autorité, ou en demandant l'avis de savants et d'enseignants qualifiés en Fiqh.
-    * Considérez l'IA comme un assistant qui vous aide à naviguer dans vos documents, mais la responsabilité finale de la compréhension et de l'application correcte des principes du Fiqh vous incombe.
+    * **Vérifiez toujours les informations critiques** en consultant les textes originaux qui vous ont été assignés, d'autres sources faisant autorité, ou en demandant l'avis de savants et d'enseignants qualifiés en Fiqh.
+    * Considérez l'IA comme un assistant qui vous aide à naviguer dans les documents qui vous sont assignés, mais la responsabilité finale de la compréhension et de l'application correcte des principes du Fiqh vous incombe.
 
-### Où sont stockés mes documents téléversés ?
+### Comment puis-je accéder à de nouveaux documents ou demander l'ajout de documents ? (Point 8.4.4)
 
-* Lorsque vous téléversez des documents, ils sont envoyés au serveur de l'application pour être traités et ajoutés à la base de connaissances que l'IA utilise.
-* Comme expliqué dans la section [Comprendre le Contexte Documentaire du Système](../conversations/conversation-context.md), ces documents contribuent à une base de connaissances partagée. Il est donc conseillé de ne pas téléverser d'informations personnelles sensibles que vous ne souhaiteriez pas voir indirectement utilisées par le système.
+* **Processus d'Assignation :** Les documents ne peuvent être téléversés et assignés aux utilisateurs que par l'administrateur du système.
+* **Demander de Nouveaux Documents :**
+    * Si vous avez besoin d'accéder à des documents spécifiques qui ne vous ont pas encore été assignés, contactez l'administrateur.
+    * Précisez clairement quels documents vous souhaitez et pourquoi ils sont pertinents pour vos recherches.
+    * L'administrateur évaluera votre demande et pourra vous assigner les documents appropriés.
+* **Suggestions de Documents :**
+    * Si vous connaissez des documents qui pourraient enrichir la base de connaissances du système, vous pouvez les suggérer à l'administrateur.
+    * L'administrateur décidera s'il convient de les ajouter au système et à quels utilisateurs les assigner.
+
+### Où sont stockés les documents qui me sont assignés ?
+
+* Les documents qui vous sont assignés sont stockés de manière sécurisée sur le serveur de l'application.
+* **Accès Personnel :** Vous n'avez accès qu'aux documents qui vous ont été spécifiquement assignés par l'administrateur. Les documents d'autres utilisateurs ne sont pas accessibles depuis votre compte.
+* **Confidentialité :** Cette architecture garantit que chaque utilisateur travaille avec un ensemble de documents curatés et pertinents pour ses besoins spécifiques.
+
+### Puis-je voir quels documents me sont assignés ?
+
+* **Oui !** Vous pouvez consulter la liste des documents qui vous sont assignés dans le [Panneau de Gestion des Documents](../interface-overview/document-management-pane.md).
+* Cette liste vous montre tous les documents auxquels l'administrateur vous a donné accès pour vos recherches.
 
 ### Que faire si l'application est lente ou ne répond pas ?
 
 1.  **Vérifiez votre connexion Internet :** Une connexion lente ou instable est souvent la cause.
 2.  **Rafraîchissez la page :** Essayez de rafraîchir la page de votre navigateur (F5 ou Ctrl+R / Cmd+R).
-3.  **Patientez :** Si vous venez d'envoyer un prompt complexe ou de téléverser plusieurs documents volumineux, le système pourrait prendre un peu de temps pour traiter la demande.
+3.  **Patientez :** Si vous venez d'envoyer un prompt complexe, le système pourrait prendre un peu de temps pour traiter la demande en analysant les documents qui vous sont assignés.
 4.  **Essayez un autre navigateur :** Pour écarter un problème lié à votre navigateur actuel.
 5.  **Redémarrez votre navigateur ou votre ordinateur.**
 
 ---
 
-Vous avez maintenant parcouru les principales fonctionnalités et les solutions aux problèmes courants. La section suivante concerne le [Glossaire des Termes](./../glossary.md) pour comprendre une liste de termes que vous rencontrerez en utilisant l'Assistant RAG Fiqh et en lisant ce guide .
+Vous avez maintenant parcouru les principales fonctionnalités et les solutions aux problèmes courants. La section suivante concerne le [Glossaire des Termes](./../glossary.md) pour comprendre une liste de termes que vous rencontrerez en utilisant l'Assistant RAG Fiqh et en lisant ce guide.

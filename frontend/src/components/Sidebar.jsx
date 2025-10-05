@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
+import { NavLink } from 'react-router-dom'; // ✅ AJOUT pour le mode admin
 import Logo from './Logo';
 import { ExtendedFab, IconBtn } from './Button';
 import { CircularProgress } from './Progress';
@@ -22,6 +23,9 @@ const Sidebar = ({
   onSaveRename,
   onRenameInputChange,
   isSavingRename,
+  // ✅ NOUVELLES PROPS pour le mode admin
+  user,
+  isAdminPage = false // Par défaut, ce n'est pas une page admin
 }) => {
 
   const renameInputRef = useRef(null);
@@ -74,6 +78,14 @@ const Sidebar = ({
       }
   };
 
+  // ✅ Classes pour les liens de navigation admin
+  const navLinkClasses = ({ isActive }) => 
+    `flex items-center gap-3 px-4 py-2 rounded-full transition-colors text-labelLarge ${
+      isActive 
+        ? 'bg-light-primaryContainer text-light-onPrimaryContainer dark:bg-dark-primaryContainer dark:text-dark-onPrimaryContainer font-medium' 
+        : 'hover:bg-light-onSurface/5 dark:hover:bg-dark-onSurface/5 text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant'
+    }`;
+
   return (
     <>
       <motion.div
@@ -83,7 +95,7 @@ const Sidebar = ({
         className={`sidebar ${isSidebarOpen ? 'active' : ''}`}>
         <div className="sidebar-inner">
           
-          {/* Logo et Bouton Menu */}
+          {/* Logo et Bouton Menu (Commun à tous les modes) */}
           <div className='h-16 grid items-center px-4 mb-4'>
              <div className='flex items-center gap-1'>
                   <IconBtn 
@@ -97,158 +109,186 @@ const Sidebar = ({
               </div>
           </div>
 
-          {/* Bouton Nouvelle Discussion */}
-          <ExtendedFab
-            text='Nouvelle Discussion'
-            classes='mb-4'
-            onClick={handleNewChatClick}
-            disabled={!!renamingConvId || isSavingRename}
-          />
+          {/********* ✅ LOGIQUE CONDITIONNELLE ICI *********/}
+          {isAdminPage ? (
+            // ******* MODE ADMIN *******
+            <div className="flex flex-col flex-grow px-2">
+              <nav className="flex flex-col gap-2">
+                <h2 className="text-titleSmall px-3 py-2 text-light-onSurfaceVariant/80 dark:text-dark-onSurfaceVariant/80">
+                  Administration
+                </h2>
+                <NavLink to="/admin/users" className={navLinkClasses}>
+                  <Icon name="manage_accounts" />
+                  <span>Gestion Utilisateurs</span>
+                </NavLink>
+                {/* Autres liens admin futurs ici */}
+              </nav>
+              <hr className="my-4 border-light-outline/20 dark:border-dark-outline/20" />
+              <nav className="flex flex-col gap-2 mt-auto">
+                <NavLink to="/" className={navLinkClasses}>
+                  <Icon name="chat" />
+                  <span>Retour au Chat</span>
+                </NavLink>
+              </nav>
+            </div>
+          ) : (
+            // ******* MODE CHAT (votre code existant) *******
+            <>
+              {/* Bouton Nouvelle Discussion */}
+              <ExtendedFab
+                text='Nouvelle Discussion'
+                classes='mb-4'
+                onClick={handleNewChatClick}
+                disabled={!!renamingConvId || isSavingRename}
+              />
 
-          {/* Section Historique */}
-          <div className='overflow-y-auto -me-2 pe-1 flex-grow'>
-            <p className='text-titleSmall h-9 grid items-center px-4 sticky top-0 bg-light-surfaceContainerLow dark:bg-dark-surfaceContainerLow z-10'>
-              Historique
-            </p>
+              {/* Section Historique */}
+              <div className='overflow-y-auto -me-2 pe-1 flex-grow'>
+                <p className='text-titleSmall h-9 grid items-center px-4 sticky top-0 bg-light-surfaceContainerLow dark:bg-dark-surfaceContainerLow z-10'>
+                  Historique
+                </p>
 
-            {/* Liste des Conversations */}
-            <nav className="flex flex-col gap-1 px-0 py-2">
-            {conversations && conversations.length > 0 ? (
-              conversations.map((conv) => (
-                <div
-                   key={conv.uid}
-                   className={`nav-item group relative rounded-full transition-colors duration-200 ease-out ${
-                     renamingConvId === conv.uid
-                       ? 'bg-light-surfaceContainerHigh dark:bg-dark-surfaceContainerHigh ring-1 ring-light-primary/50 dark:ring-dark-primary/50'
-                       : activeConversationUid === conv.uid
-                       ? 'bg-light-secondaryContainer dark:bg-dark-secondaryContainer'
-                       : 'hover:bg-light-onSurface/5 dark:hover:bg-dark-onSurface/5'
-                   }`}
-                   title={renamingConvId === conv.uid ? "Renommer la discussion..." : conv.title}
-                   onClick={(e) => handleSelect(conv, e)}
-                 >
-                   {renamingConvId === conv.uid ? (
-                     // UI DE RENOMMAGE
-                     <div className="flex items-center gap-1 px-3 py-1 h-[36px]">
-                       <input
-                         ref={renameInputRef}
-                         type="text"
-                         value={renameInputText}
-                         onChange={onRenameInputChange}
-                         onKeyDown={(e) => handleKeyDownRename(e, conv.uid)}
-                         disabled={isSavingRename}
-                         className="flex-grow bg-transparent border-b border-light-primary dark:border-dark-primary focus:outline-none text-sm px-1 py-0 text-light-onSurface dark:text-dark-onSurface placeholder-light-onSurfaceVariant/70"
-                         placeholder="Nouveau titre..."
-                         maxLength={100}
-                         onClick={(e) => e.stopPropagation()}
-                       />
-                       
-                       {isSavingRename ? (
-                           <div className="w-10 h-6 flex justify-center items-center">
-                              <CircularProgress size="small" />
-                           </div>
-                       ) : (
-                         <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                           <IconBtn
-                             icon='check'
-                             size='small'
-                             title='Sauvegarder'
-                             onClick={(e) => { 
-                               e.stopPropagation(); 
-                               if (renameInputText.trim()) onSaveRename(conv.uid, renameInputText);
-                             }}
-                             disabled={!renameInputText.trim()}
-                             classes="text-green-600 dark:text-green-400 hover:bg-green-500/10 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:hover:bg-transparent"
-                           />
-                           <IconBtn
-                             icon='close'
-                             size='small'
-                             title='Annuler'
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               onCancelRename();
-                             }}
-                             classes="text-red-600 dark:text-red-400 hover:bg-red-500/10"
-                           />
-                         </div>
-                       )}
-                     </div>
-                   ) : (
-                     // AFFICHAGE NORMAL
-                     <div
-                       className={`nav-link w-full text-left h-[36px] px-4 flex items-center gap-3 relative overflow-hidden ${
-                         activeConversationUid === conv.uid
-                           ? 'text-light-onSecondaryContainer dark:text-dark-onSecondaryContainer font-medium'
-                           : 'text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant'
+                {/* Liste des Conversations */}
+                <nav className="flex flex-col gap-1 px-0 py-2">
+                {conversations && conversations.length > 0 ? (
+                  conversations.map((conv) => (
+                    <div
+                       key={conv.uid}
+                       className={`nav-item group relative rounded-full transition-colors duration-200 ease-out ${
+                         renamingConvId === conv.uid
+                           ? 'bg-light-surfaceContainerHigh dark:bg-dark-surfaceContainerHigh ring-1 ring-light-primary/50 dark:ring-dark-primary/50'
+                           : activeConversationUid === conv.uid
+                           ? 'bg-light-secondaryContainer dark:bg-dark-secondaryContainer'
+                           : 'hover:bg-light-onSurface/5 dark:hover:bg-dark-onSurface/5'
                        }`}
+                       title={renamingConvId === conv.uid ? "Renommer la discussion..." : conv.title}
+                       onClick={(e) => handleSelect(conv, e)}
                      >
-                       {/* Icône de chat */}
-                       <Icon 
-                         name="chat_bubble" 
-                         size={16} 
-                         className="flex-shrink-0"
-                       />
-                       
-                       <span className='truncate flex-grow cursor-pointer hover:text-light-primary dark:hover:text-dark-primary transition-colors duration-200'>
-                         {conv.title.slice(0, 30)}{conv.title.length > 30 ? '...' : ''}
-                       </span>
-
-                       {/* Boutons d'actions */}
-                       {!renamingConvId && (
-                         <div 
-                           className={`action-buttons flex items-center ml-auto transition-opacity duration-150 ease-in-out absolute right-1 top-1/2 -translate-y-1/2 bg-light-surfaceContainerLow dark:bg-dark-surfaceContainerLow rounded-full p-0.5 shadow-sm ${'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}
-                           onClick={(e) => e.stopPropagation()}
-                         >
-                           {isDeleting === conv.uid ? (
-                             <div className="w-12 h-6 flex justify-center items-center">
-                               <CircularProgress size="small" />
-                             </div>
+                       {renamingConvId === conv.uid ? (
+                         // UI DE RENOMMAGE
+                         <div className="flex items-center gap-1 px-3 py-1 h-[36px]">
+                           <input
+                             ref={renameInputRef}
+                             type="text"
+                             value={renameInputText}
+                             onChange={onRenameInputChange}
+                             onKeyDown={(e) => handleKeyDownRename(e, conv.uid)}
+                             disabled={isSavingRename}
+                             className="flex-grow bg-transparent border-b border-light-primary dark:border-dark-primary focus:outline-none text-sm px-1 py-0 text-light-onSurface dark:text-dark-onSurface placeholder-light-onSurfaceVariant/70"
+                             placeholder="Nouveau titre..."
+                             maxLength={100}
+                             onClick={(e) => e.stopPropagation()}
+                           />
+                           
+                           {isSavingRename ? (
+                               <div className="w-10 h-6 flex justify-center items-center">
+                                  <CircularProgress size="small" />
+                               </div>
                            ) : (
-                             <>
-                               {/* Bouton Renommer */}
+                             <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                <IconBtn
-                                 icon='drive_file_rename_outline'
+                                 icon='check'
                                  size='small'
+                                 title='Sauvegarder'
+                                 onClick={(e) => { 
+                                   e.stopPropagation(); 
+                                   if (renameInputText.trim()) onSaveRename(conv.uid, renameInputText);
+                                 }}
+                                 disabled={!renameInputText.trim()}
+                                 classes="text-green-600 dark:text-green-400 hover:bg-green-500/10 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:hover:bg-transparent"
+                               />
+                               <IconBtn
+                                 icon='close'
+                                 size='small'
+                                 title='Annuler'
                                  onClick={(e) => {
                                    e.stopPropagation();
-                                   onStartRename(conv.uid, conv.title);
+                                   onCancelRename();
                                  }}
-                                 classes='text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant hover:text-light-primary dark:hover:text-dark-primary'
-                                 title='Renommer'
-                                 disabled={!!isDeleting}
+                                 classes="text-red-600 dark:text-red-400 hover:bg-red-500/10"
                                />
-                               
-                               {/* Bouton Supprimer */}
-                               <IconBtn
-                                 icon='delete'
-                                 size='small'
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   onDeleteConversation(conv.uid);
-                                 }}
-                                 classes='text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant hover:text-red-600 dark:hover:text-red-400'
-                                 title='Supprimer'
-                                 disabled={!!isDeleting}
-                               />
-                             </>
+                             </div>
                            )}
                          </div>
-                       )}
-                       
-                       <div className='state-layer'></div>
-                     </div>
-                   )}
-                 </div>
-              ))
-              ) : (
-                <p className='px-4 py-2 text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant text-sm italic'>
-                  Aucune conversation pour le moment.
-                </p>
-              )}
-            </nav>
-          </div>
+                       ) : (
+                         // AFFICHAGE NORMAL
+                         <div
+                           className={`nav-link w-full text-left h-[36px] px-4 flex items-center gap-3 relative overflow-hidden ${
+                             activeConversationUid === conv.uid
+                               ? 'text-light-onSecondaryContainer dark:text-dark-onSecondaryContainer font-medium'
+                               : 'text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant'
+                           }`}
+                         >
+                           {/* Icône de chat */}
+                           <Icon 
+                             name="chat_bubble" 
+                             size={16} 
+                             className="flex-shrink-0"
+                           />
+                           
+                           <span className='truncate flex-grow cursor-pointer hover:text-light-primary dark:hover:text-dark-primary transition-colors duration-200'>
+                             {conv.title.slice(0, 30)}{conv.title.length > 30 ? '...' : ''}
+                           </span>
 
-          {/* Footer */}
+                           {/* Boutons d'actions */}
+                           {!renamingConvId && (
+                             <div 
+                               className={`action-buttons flex items-center ml-auto transition-opacity duration-150 ease-in-out absolute right-1 top-1/2 -translate-y-1/2 bg-light-surfaceContainerLow dark:bg-dark-surfaceContainerLow rounded-full p-0.5 shadow-sm ${'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}
+                               onClick={(e) => e.stopPropagation()}
+                             >
+                               {isDeleting === conv.uid ? (
+                                 <div className="w-12 h-6 flex justify-center items-center">
+                                   <CircularProgress size="small" />
+                                 </div>
+                               ) : (
+                                 <>
+                                   {/* Bouton Renommer */}
+                                   <IconBtn
+                                     icon='drive_file_rename_outline'
+                                     size='small'
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       onStartRename(conv.uid, conv.title);
+                                     }}
+                                     classes='text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant hover:text-light-primary dark:hover:text-dark-primary'
+                                     title='Renommer'
+                                     disabled={!!isDeleting}
+                                   />
+                                   
+                                   {/* Bouton Supprimer */}
+                                   <IconBtn
+                                     icon='delete'
+                                     size='small'
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       onDeleteConversation(conv.uid);
+                                     }}
+                                     classes='text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant hover:text-red-600 dark:hover:text-red-400'
+                                     title='Supprimer'
+                                     disabled={!!isDeleting}
+                                   />
+                                 </>
+                               )}
+                             </div>
+                           )}
+                           
+                           <div className='state-layer'></div>
+                         </div>
+                       )}
+                     </div>
+                  ))
+                  ) : (
+                    <p className='px-4 py-2 text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant text-sm italic'>
+                      Aucune conversation pour le moment.
+                    </p>
+                  )}
+                </nav>
+              </div>
+            </>
+          )}
+          {/********* FIN DE LA LOGIQUE CONDITIONNELLE *********/}
+
+          {/* Footer (Commun à tous les modes) */}
           <div className='mt-auto h-14 px-4 grid items-center text-labelLarge text-light-onSurfaceVariant dark:text-dark-onSurfaceVariant border-t border-light-surfaceContainerHigh dark:border-dark-surfaceContainerHigh truncate'>
             &copy; 2025 isetsfax. Tous droits réservés.
           </div>
@@ -270,6 +310,7 @@ const Sidebar = ({
   );
 };
 
+// ✅ Ajout des nouvelles PropTypes
 Sidebar.propTypes = {
   isSidebarOpen: PropTypes.bool,
   toggleSidebar: PropTypes.func,
@@ -286,6 +327,9 @@ Sidebar.propTypes = {
   onSaveRename: PropTypes.func,
   onRenameInputChange: PropTypes.func,
   isSavingRename: PropTypes.bool,
+  // ✅ Nouvelles PropTypes pour le mode admin
+  user: PropTypes.object,
+  isAdminPage: PropTypes.bool,
 };
 
 export default Sidebar;
