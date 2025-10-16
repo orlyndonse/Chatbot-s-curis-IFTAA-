@@ -135,7 +135,6 @@ const App = () => {
     } finally {
       setIsLoadingData(false);
     }
-    // --- On retire currentMessages.length des dépendances ---
   }, [showSnackbar, handleCancelEdit, handleCancelRename, activeConversation?.uid]);
 
   useEffect(() => { 

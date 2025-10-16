@@ -8,9 +8,8 @@ import SendEmail from "../pages/SendEmail.jsx";
 import ResetPasswordSuccess from "../pages/ResetPasswordSuccess.jsx";
 import VerifyEmailHandler from "../pages/VerifyEmailHandler.jsx";
 import AdminUserManagement from "../pages/AdminUserManagement.jsx";
-import Profile from "../pages/Profile.jsx"; // NOUVEAU
+import Profile from "../pages/Profile.jsx";
 
-// Import du layout admin
 import AdminLayout from "../components/AdminLayout.jsx";
 
 /**
@@ -82,11 +81,10 @@ const router = createBrowserRouter([
         loader: resetPasswordSuccessReloader,
         action: resetPasswordSuccessAction
     },
-    // NOUVELLE ROUTE PROFILE
     {
         path: '/profile',
         element: <Profile />,
-        loader: appLoader, // Utilise le même loader que '/' pour avoir accès aux données user
+        loader: appLoader,
     },
     {
         path: '/admin',
